@@ -8,11 +8,17 @@
 # testing
 /coverage
 
+# deprecated
+/deprecated
+
 # production
 /build
+/dist
 
 # misc
 .DS_Store
+Thumbs.db
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -21,3 +27,23 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+
+# Cache and temporary files
+*.log
+*.tmp
+*.cache
+
+# ESLint and TypeScript
+.eslintcache
+*.tsbuildinfo
+
+# Optional: Lockfiles (choose based on package manager)
+/package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
