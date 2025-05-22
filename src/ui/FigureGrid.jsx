@@ -108,9 +108,52 @@ class FigureGrid extends React.Component {
     this.bringToFront(id);
   };
 
+  calculateRequiredCanvasSize() {
+    const { layout, zoom } = this.state;
+    const { containerWidth, containerHeight } = this.state;
+
+    if (layout.length === 0) {
+      return {
+        width: containerWidth,
+        height: containerHeight,
+      };
+    }
+
+    // Calculate the maximum extent of all figures
+    let maxX = 0;
+    let maxY = 0;
+
+    layout.forEach((item) => {
+      const right = item.x + item.width;
+      const bottom = item.y + item.height;
+      if (right > maxX) maxX = right;
+      if (bottom > maxY) maxY = bottom;
+    });
+
+    // Add some padding (20% of average figure size or 200px, whichever is smaller)
+    const avgWidth = layout.reduce((sum, item) => sum + item.width, 0) / layout.length;
+    const avgHeight = layout.reduce((sum, item) => sum + item.height, 0) / layout.length;
+    const padding = Math.min(avgWidth * 0.2, avgHeight * 0.2, 200);
+
+    // Calculate required size based on figures
+    const figuresWidth = maxX + padding;
+    const figuresHeight = maxY + padding;
+
+    // Calculate required size based on zoom
+    const zoomWidth = containerWidth / zoom;
+    const zoomHeight = containerHeight / zoom;
+
+    // Use whichever is larger
+    return {
+      width: Math.max(figuresWidth, zoomWidth),
+      height: Math.max(figuresHeight, zoomHeight),
+    };
+  }
+
   render() {
     const { figures, onDeleteFigure, onTitleChange, onFiguresChange, figureFactory } = this.props;
-    const { zoom, containerWidth, containerHeight, layout, zIndices } = this.state;
+    const { zoom, zIndices } = this.state;
+    const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
 
     return (
       <div
@@ -127,15 +170,15 @@ class FigureGrid extends React.Component {
         <div
           style={{
             position: 'relative',
-            width: containerWidth,
-            height: containerHeight,
+            width: canvasWidth,
+            height: canvasHeight,
             background: 'white',
             transformOrigin: 'top left',
             transform: `scale(${zoom})`,
           }}
         >
           {figures.map((fig) => {
-            const layoutItem = layout.find((l) => l.id === fig.id);
+            const layoutItem = this.state.layout.find((l) => l.id === fig.id);
             if (!layoutItem) return null;
 
             const FigureComponent = figureFactory.registry.get(fig.type);
@@ -181,7 +224,6 @@ class FigureGrid extends React.Component {
                 >
                   {FigureComponent ? (
                     <FigureComponent
-                      //key={fig.id + JSON.stringify(fig.settings)} // force re-render on settings change
                       key={fig.id}
                       id={fig.id}
                       title={fig.title}
