@@ -1,4 +1,3 @@
-// src/figures/Plot.jsx
 import React from 'react';
 import Plotly from 'react-plotly.js';
 import Figure from '../Figure';
@@ -6,7 +5,6 @@ import Figure from '../Figure';
 export default class Plot extends Figure {
   constructor(props) {
     super(props);
-
     this.state = {
       data: { x: [], y: [] },
       loading: true,
@@ -19,32 +17,26 @@ export default class Plot extends Figure {
         yaxis: { title: 'Y' },
       },
     };
-
-    this.settings = {
-      updateFrequency: 2,
-      ...this.settings,
-    };
-
-    this.intervalId = null;
   }
 
-  componentDidMount() {
+  // 🔹 Runs once on mount
+  onInit() {
     this.fetchData();
-    this.intervalId = setInterval(this.fetchData, this.settings.updateFrequency * 1000);
   }
 
-  componentWillUnmount() {
-    clearInterval(this.intervalId);
+  // 🔹 Runs every update tick
+  onUpdateTick() {
+    this.fetchData();
   }
 
   getDataUrl() {
-    throw new Error('getDataUrl() not implemented in subclass');
+    throw new Error('getDataUrl() must be implemented in Plot subclass');
   }
 
   formatData(raw) {
     return {
-      x: raw.time,
-      y: raw.value,
+      x: raw.time || [],
+      y: raw.value || [],
     };
   }
 
@@ -58,7 +50,10 @@ export default class Plot extends Figure {
 
   fetchData = () => {
     fetch(this.getDataUrl())
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        return res.json();
+      })
       .then((json) => {
         const { x, y } = this.formatData(json);
         this.setState((prev) => ({
@@ -93,13 +88,12 @@ export default class Plot extends Figure {
             ]}
             layout={{ ...layout }}
             revision={revision}
-            style={{ width: '100%', height: '100%' }} // Full width/height
-            useResizeHandler={true} // Important for responsive behavior
+            style={{ width: '100%', height: '100%' }}
+            useResizeHandler={true}
             config={{ responsive: true }}
           />
         )}
       </div>
     );
   }
-
 }

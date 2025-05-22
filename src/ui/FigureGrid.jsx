@@ -11,7 +11,7 @@ class FigureGrid extends React.Component {
       zoom: 1,
       containerWidth: window.innerWidth,
       containerHeight: window.innerHeight,
-      layout: this.props.layout || [],
+      layout: props.layout || [],
       zIndices: {},
       maxZ: 1,
     };
@@ -23,11 +23,12 @@ class FigureGrid extends React.Component {
     window.addEventListener('resize', this.updateContainerSize);
     this.updateContainerSize();
 
+    // Initialize zIndices for all figures
     const initialZ = {};
-    (this.props.figures || []).forEach((fig) => {
-      initialZ[fig.id] = 1;
+    (this.props.figures || []).forEach((fig, idx) => {
+      initialZ[fig.id] = idx + 1;
     });
-    this.setState({ zIndices: initialZ });
+    this.setState({ zIndices: initialZ, maxZ: (this.props.figures || []).length });
   }
 
   componentWillUnmount() {
@@ -35,6 +36,7 @@ class FigureGrid extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
+    // Handle new figures added after mount
     if (prevProps.figures !== this.props.figures) {
       const newZIndices = { ...this.state.zIndices };
       let maxZ = this.state.maxZ;
@@ -51,6 +53,7 @@ class FigureGrid extends React.Component {
       }
     }
 
+    // Update layout state if layout prop changes
     if (prevProps.layout !== this.props.layout) {
       this.setState({ layout: this.props.layout });
     }
@@ -88,7 +91,7 @@ class FigureGrid extends React.Component {
 
   updateFigureSettings = (id, newSettings) => {
     const updatedFigures = this.props.figures.map((fig) =>
-      fig.id === id ? { ...fig, settings: newSettings } : fig
+      fig.id === id ? { ...fig, settings: { ...newSettings } } : fig
     );
     this.props.onFiguresChange?.(updatedFigures);
   };
@@ -106,7 +109,7 @@ class FigureGrid extends React.Component {
   };
 
   render() {
-    const { figures, onDeleteFigure, onTitleChange, figureFactory } = this.props;
+    const { figures, onDeleteFigure, onTitleChange, onFiguresChange, figureFactory } = this.props;
     const { zoom, containerWidth, containerHeight, layout, zIndices } = this.state;
 
     return (
@@ -138,9 +141,6 @@ class FigureGrid extends React.Component {
             const FigureComponent = figureFactory.registry.get(fig.type);
             const zIndex = zIndices[fig.id] || 1;
 
-            console.log('Figures in FigureGrid:', this.props.figures);
-
-
             return (
               <Rnd
                 key={fig.id}
@@ -168,6 +168,8 @@ class FigureGrid extends React.Component {
                   borderRadius: 6,
                   boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                   zIndex,
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
               >
                 <FigureTile
@@ -179,10 +181,12 @@ class FigureGrid extends React.Component {
                 >
                   {FigureComponent ? (
                     <FigureComponent
-                      key={JSON.stringify(fig.settings)} // force re-render on settings change
+                      //key={fig.id + JSON.stringify(fig.settings)} // force re-render on settings change
+                      key={fig.id}
                       id={fig.id}
                       title={fig.title}
                       settings={fig.settings}
+                      onSettingsCorrected={(correctedSettings) => this.updateFigureSettings(fig.id, correctedSettings)}
                     />
                   ) : (
                     <div>Unknown figure type: {fig.type}</div>

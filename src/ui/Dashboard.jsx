@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import FigureGrid from './FigureGrid';  // keep same name
+import FigureGrid from './FigureGrid';
 
 class Dashboard extends React.Component {
   constructor(props) {
@@ -8,13 +8,29 @@ class Dashboard extends React.Component {
     this.registryManager = props.registryManager;
     this.factoryManager = props.factoryManager;
 
-    this.state = {
-      figures: [], // array of { id, type, title, settings }
-      layout: [],  // array of { id, x, y, width, height } in pixels
+    // Try loading from localStorage
+    let savedState = null;
+    try {
+      const saved = localStorage.getItem('dashboard-layout');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.figures && parsed.layout) {
+          savedState = {
+            figures: parsed.figures,
+            layout: parsed.layout,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load saved layout from localStorage:', e);
+    }
+
+    this.state = savedState || {
+      figures: [],
+      layout: [],
     };
   }
 
-  // Find next free pixel position (w,h in px)
   findNextFreePosition(layout, w, h, step = 20) {
     let y = 0;
     while (y < 10000) {
@@ -40,17 +56,13 @@ class Dashboard extends React.Component {
       return;
     }
 
-    // Create temporary figure with default settings
     const tempFigure = figureFactory.create({ type: figureType });
     if (!tempFigure) {
       console.warn(`Could not create figure of type '${figureType}'`);
       return;
     }
 
-    // Get JSON representation from the figure
     const newFigure = tempFigure.toJSON();
-
-    // Override the title with the desired format
     newFigure.title = `${figureType} (${newFigure.id})`;
 
     const width = 400;
@@ -90,12 +102,17 @@ class Dashboard extends React.Component {
     this.setState({ layout: newLayout });
   };
 
+  handleFiguresChange = (updatedFigures) => {
+    this.setState({ figures: updatedFigures });
+  };
+
   handleClearLayout = () => {
     if (window.confirm('Are you sure you want to clear the entire layout?')) {
       this.setState({
         figures: [],
         layout: [],
       });
+      localStorage.removeItem('dashboard-layout');
     }
   };
 
@@ -114,6 +131,7 @@ class Dashboard extends React.Component {
     try {
       const parsed = JSON.parse(jsonString);
       this.fromJSON(parsed);
+      localStorage.setItem('dashboard-layout', JSON.stringify(parsed));
     } catch (e) {
       alert('Failed to parse JSON');
     }
@@ -135,6 +153,25 @@ class Dashboard extends React.Component {
     }
   };
 
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevState.figures !== this.state.figures ||
+      prevState.layout !== this.state.layout
+    ) {
+      try {
+        localStorage.setItem(
+          'dashboard-layout',
+          JSON.stringify({
+            figures: this.state.figures,
+            layout: this.state.layout,
+          })
+        );
+      } catch (e) {
+        console.warn('Failed to save layout to localStorage:', e);
+      }
+    }
+  }
+
   render() {
     const { figures, layout } = this.state;
     const figureFactory = this.factoryManager.get('figures');
@@ -154,6 +191,7 @@ class Dashboard extends React.Component {
           onLayoutChange={this.handleLayoutChange}
           onDeleteFigure={this.handleDeleteFigure}
           onTitleChange={this.handleTitleChange}
+          onFiguresChange={this.handleFiguresChange}
           figureFactory={figureFactory}
         />
       </div>

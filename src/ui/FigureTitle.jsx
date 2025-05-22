@@ -35,6 +35,7 @@ export default class FigureTitle extends React.Component {
     }
   };
 
+
   render() {
     const { editing, editTitle } = this.state;
 
