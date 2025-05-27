@@ -57,6 +57,12 @@ class FigureGrid extends React.Component {
     if (prevProps.layout !== this.props.layout) {
       this.setState({ layout: this.props.layout });
     }
+
+    // Handle sidebar collapse state changes
+    if (prevProps.sidebarCollapsed !== this.props.sidebarCollapsed) {
+      // Add a small delay to let the sidebar animation complete
+      setTimeout(this.updateContainerSize, 300);
+    }
   }
 
   updateContainerSize = () => {
@@ -65,6 +71,15 @@ class FigureGrid extends React.Component {
       this.setState({
         containerWidth: clientWidth,
         containerHeight: clientHeight,
+      }, () => {
+        // Force recalculation of canvas size after container update
+        const canvas = this.containerRef.current.firstChild;
+        if (canvas) {
+          const { width, height } = this.calculateRequiredCanvasSize();
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          canvas.style.transition = 'none';
+        }
       });
     }
   };
@@ -151,7 +166,7 @@ class FigureGrid extends React.Component {
   }
 
   render() {
-    const { figures, onDeleteFigure, onTitleChange, onFiguresChange, figureFactory } = this.props;
+    const { figures, onDeleteFigure, onTitleChange, figureFactory } = this.props;
     const { zoom, zIndices } = this.state;
     const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
 
@@ -165,6 +180,7 @@ class FigureGrid extends React.Component {
           height: '100%',
           background: '#f0f0f0',
           border: '1px solid #ccc',
+          transition: 'width 0.3s',
         }}
       >
         <div
@@ -175,6 +191,7 @@ class FigureGrid extends React.Component {
             background: 'white',
             transformOrigin: 'top left',
             transform: `scale(${zoom})`,
+            transition: 'width 0.3s, height 0.3s',
           }}
         >
           {figures.map((fig) => {
@@ -228,7 +245,9 @@ class FigureGrid extends React.Component {
                       id={fig.id}
                       title={fig.title}
                       settings={fig.settings}
-                      onSettingsCorrected={(correctedSettings) => this.updateFigureSettings(fig.id, correctedSettings)}
+                      onSettingsCorrected={(correctedSettings) => 
+                        this.updateFigureSettings(fig.id, correctedSettings)
+                      }
                     />
                   ) : (
                     <div>Unknown figure type: {fig.type}</div>

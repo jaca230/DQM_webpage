@@ -22,6 +22,7 @@ class Dashboard extends React.Component {
           savedState = {
             tabs: parsed.tabs,
             activeTabId: parsed.activeTabId,
+            sidebarCollapsed: false
           };
         }
       }
@@ -32,7 +33,8 @@ class Dashboard extends React.Component {
     // Use default layout if no saved state or empty layout
     this.state = savedState || {
       activeTabId: defaultLayout.activeTabId,
-      tabs: JSON.parse(JSON.stringify(defaultLayout.tabs)) // Deep copy
+      tabs: JSON.parse(JSON.stringify(defaultLayout.tabs)),
+      sidebarCollapsed: false
     };
   }
 
@@ -95,6 +97,10 @@ class Dashboard extends React.Component {
 
   handleSelectTab = (tabId) => {
     this.setState({ activeTabId: tabId });
+  };
+
+  handleSidebarCollapse = (collapsed) => {
+    this.setState({ sidebarCollapsed: collapsed });
   };
 
   handleAddFigure = (figureType) => {
@@ -302,7 +308,7 @@ class Dashboard extends React.Component {
   }
 
   render() {
-    const { activeTabId, tabs } = this.state;
+    const { activeTabId, tabs, sidebarCollapsed } = this.state;
     const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
     const figureFactory = this.factoryManager.get('figures');
 
@@ -326,6 +332,7 @@ class Dashboard extends React.Component {
             onImportTab={this.handleImportTab}
             onClearLayout={this.handleClearLayout}
             onResetLayout={this.handleResetLayout}
+            onCollapse={this.handleSidebarCollapse}
           />
           <FigureGrid
             figures={activeTab.figures}
@@ -335,6 +342,7 @@ class Dashboard extends React.Component {
             onTitleChange={this.handleTitleChange}
             onFiguresChange={this.handleFiguresChange}
             figureFactory={figureFactory}
+            sidebarCollapsed={sidebarCollapsed}
           />
         </div>
       </div>

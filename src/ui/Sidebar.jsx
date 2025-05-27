@@ -45,7 +45,10 @@ class Sidebar extends React.Component {
   };
 
   toggleCollapse = () => {
-    this.setState(state => ({ collapsed: !state.collapsed }));
+    this.setState(state => ({ collapsed: !state.collapsed }), () => {
+      // Notify parent of collapse state change
+      this.props.onCollapse?.(this.state.collapsed);
+    });
   };
 
   render() {
@@ -127,8 +130,10 @@ class Sidebar extends React.Component {
                   width: '100%', 
                   marginBottom: '0.5rem', 
                   padding: '0.5rem',
-                  backgroundColor: '#e8f0fe'
+                  backgroundColor: '#e8f0fe',
                 }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#c2d1ff'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#e8f0fe'}
               >
                 Reset to Default Layout
               </button>
@@ -138,8 +143,10 @@ class Sidebar extends React.Component {
                   width: '100%', 
                   marginBottom: '0.5rem', 
                   padding: '0.5rem',
-                  backgroundColor: '#fdd'
+                  backgroundColor: '#fdd',
                 }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fbb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fdd'}
               >
                 Clear All Tabs
               </button>
