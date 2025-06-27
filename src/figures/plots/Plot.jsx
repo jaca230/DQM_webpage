@@ -3,40 +3,46 @@ import Plotly from 'react-plotly.js';
 import Figure from '../Figure';
 
 export default class Plot extends Figure {
+  static displayName = 'Plot';
+  static name = 'Plot';
   constructor(props) {
     super(props);
     this.state = {
-      data: { x: [], y: [] },
+      data: [],        // Array of traces (Plotly format)
+      layout: {},      // Plotly layout object
       loading: true,
       error: null,
       revision: 0,
+    };
+  }
+
+  onInit() {
+    this.fetchData();
+  }
+
+  onUpdateTick() {
+    this.fetchData();
+  }
+
+  // This method now returns the full plotly traces and layout
+  formatPlotly(json) {
+    // Default implementation for scatter plot
+    return {
+      data: [
+        {
+          x: json.time || [],
+          y: json.value || [],
+          type: this.getPlotType(),
+          mode: 'lines+markers',
+          marker: { color: this.getPlotColor() },
+        },
+      ],
       layout: {
         autosize: true,
         margin: { t: 30, r: 20, l: 40, b: 40 },
         xaxis: { title: 'X' },
         yaxis: { title: 'Y' },
       },
-    };
-  }
-
-  // 🔹 Runs once on mount
-  onInit() {
-    this.fetchData();
-  }
-
-  // 🔹 Runs every update tick
-  onUpdateTick() {
-    this.fetchData();
-  }
-
-  getDataUrl() {
-    throw new Error('getDataUrl() must be implemented in Plot subclass');
-  }
-
-  formatData(raw) {
-    return {
-      x: raw.time || [],
-      y: raw.value || [],
     };
   }
 
@@ -55,9 +61,10 @@ export default class Plot extends Figure {
         return res.json();
       })
       .then((json) => {
-        const { x, y } = this.formatData(json);
+        const { data, layout } = this.formatPlotly(json);
         this.setState((prev) => ({
-          data: { x, y },
+          data,
+          layout,
           loading: false,
           error: null,
           revision: prev.revision + 1,
@@ -77,16 +84,8 @@ export default class Plot extends Figure {
         {error && <p style={{ color: 'red' }}>Error: {error}</p>}
         {!loading && !error && (
           <Plotly
-            data={[
-              {
-                x: data.x,
-                y: data.y,
-                type: this.getPlotType(),
-                mode: 'lines+markers',
-                marker: { color: this.getPlotColor() },
-              },
-            ]}
-            layout={{ ...layout }}
+            data={data}
+            layout={layout}
             revision={revision}
             style={{ width: '100%', height: '100%' }}
             useResizeHandler={true}

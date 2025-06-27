@@ -12,7 +12,7 @@ export default class FigureTile extends React.Component {
     };
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps) {
     if (
       this.state.showMenu &&
       prevProps.settings !== this.props.settings
@@ -55,7 +55,7 @@ export default class FigureTile extends React.Component {
   };
 
   render() {
-    const { title, children } = this.props;
+    const { title, children, schema = {} } = this.props;
     const { showMenu, tempSettings } = this.state;
 
     return (
@@ -94,26 +94,36 @@ export default class FigureTile extends React.Component {
               overflow: 'hidden',
             }}
           >
-            <div
-              className="drag-handle"
-              style={{ cursor: 'grab', display: 'flex', alignItems: 'center' }}
-              title="Drag tile"
-            >
-              <Move size={16} strokeWidth={2} />
-            </div>
-            <FigureTitle title={title} onChange={this.onTitleChange} />
-          </div>
-
-          <div style={{ flexShrink: 0, marginLeft: '0.5rem' }}>
             <button
               className="no-drag"
               onClick={this.toggleMenu}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
               title="Options"
               aria-label="Toggle settings menu"
             >
               <Settings size={16} strokeWidth={2} />
             </button>
+
+            <FigureTitle title={title} onChange={this.onTitleChange} />
+          </div>
+
+          <div
+            className="drag-handle"
+            style={{
+              cursor: 'grab',
+              display: 'flex',
+              alignItems: 'center',
+              marginLeft: '0.5rem',
+              flexShrink: 0,
+            }}
+            title="Drag tile"
+          >
+            <Move size={16} strokeWidth={2} />
           </div>
         </div>
 
@@ -121,6 +131,7 @@ export default class FigureTile extends React.Component {
         {showMenu && tempSettings && (
           <SettingsMenu
             settings={tempSettings}
+            schema={schema}
             onChange={this.handleSettingChange}
             onApply={this.applySettings}
             onDelete={this.handleDelete}

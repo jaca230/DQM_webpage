@@ -6,7 +6,7 @@ export default class FigureRegistry extends Registry {
     super();
 
     const context = require.context('../figures', true, /\.jsx?$/);
-    const ignoreFiles = ['Figure.jsx', 'Plot.jsx', 'Table.jsx'];
+    const ignoreFiles = ['StaticFigure.jsx', 'Figure.jsx', 'Plot.jsx', 'Table.jsx'];
 
     context.keys().forEach((key) => {
       const filename = key.split('/').pop();

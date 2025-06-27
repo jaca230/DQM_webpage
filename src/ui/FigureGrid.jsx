@@ -68,19 +68,22 @@ class FigureGrid extends React.Component {
   updateContainerSize = () => {
     if (this.containerRef.current) {
       const { clientWidth, clientHeight } = this.containerRef.current;
-      this.setState({
-        containerWidth: clientWidth,
-        containerHeight: clientHeight,
-      }, () => {
-        // Force recalculation of canvas size after container update
-        const canvas = this.containerRef.current.firstChild;
-        if (canvas) {
-          const { width, height } = this.calculateRequiredCanvasSize();
-          canvas.style.width = `${width}px`;
-          canvas.style.height = `${height}px`;
-          canvas.style.transition = 'none';
+      this.setState(
+        {
+          containerWidth: clientWidth,
+          containerHeight: clientHeight,
+        },
+        () => {
+          // Force recalculation of canvas size after container update
+          const canvas = this.containerRef.current.firstChild;
+          if (canvas) {
+            const { width, height } = this.calculateRequiredCanvasSize();
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            canvas.style.transition = 'none';
+          }
         }
-      });
+      );
     }
   };
 
@@ -201,6 +204,9 @@ class FigureGrid extends React.Component {
             const FigureComponent = figureFactory.registry.get(fig.type);
             const zIndex = zIndices[fig.id] || 1;
 
+            // Get settingSchema from the figure class, default to empty object
+            const schema = FigureComponent?.settingSchema || {};
+
             return (
               <Rnd
                 key={fig.id}
@@ -235,6 +241,7 @@ class FigureGrid extends React.Component {
                 <FigureTile
                   title={fig.title}
                   settings={fig.settings}
+                  schema={schema} // <-- pass schema here
                   onDelete={() => onDeleteFigure(fig.id)}
                   onTitleChange={(newTitle) => onTitleChange(fig.id, newTitle)}
                   onSettingsChange={(newSettings) => this.updateFigureSettings(fig.id, newSettings)}
@@ -245,7 +252,7 @@ class FigureGrid extends React.Component {
                       id={fig.id}
                       title={fig.title}
                       settings={fig.settings}
-                      onSettingsCorrected={(correctedSettings) => 
+                      onSettingsCorrected={(correctedSettings) =>
                         this.updateFigureSettings(fig.id, correctedSettings)
                       }
                     />

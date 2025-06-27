@@ -9,46 +9,60 @@ class Dashboard extends React.Component {
     super(props);
     this.registryManager = props.registryManager;
     this.factoryManager = props.factoryManager;
+    this.pluginLoader = props.pluginLoader;
 
-    // Try loading from localStorage
-    let savedState = null;
+    this.state = {
+      pluginUrls: [],
+      activeTabId: null,
+      tabs: [],
+      sidebarCollapsed: false,
+      loadingPlugins: true,
+    };
+  }
+
+  async componentDidMount() {
+    let savedLayout = null;
     try {
       const saved = localStorage.getItem('dashboard-layout');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Check if the layout has meaningful content
-        if (parsed.tabs && parsed.activeTabId && 
-            parsed.tabs.some(tab => tab.figures.length > 0)) {
-          savedState = {
-            tabs: parsed.tabs,
-            activeTabId: parsed.activeTabId,
-            sidebarCollapsed: false
-          };
-        }
+        savedLayout = parsed;
       }
     } catch (e) {
       console.warn('Failed to load saved layout from localStorage:', e);
     }
 
-    // Use default layout if no saved state or empty layout
-    this.state = savedState || {
-      activeTabId: defaultLayout.activeTabId,
-      tabs: JSON.parse(JSON.stringify(defaultLayout.tabs)),
-      sidebarCollapsed: false
-    };
+    const layoutToLoad = savedLayout || defaultLayout;
+    const pluginUrls = layoutToLoad.pluginUrls || [];
+
+    try {
+      await this.pluginLoader.loadPluginsFromUrls(pluginUrls);
+      console.info('All plugins loaded');
+    } catch (err) {
+      console.warn('Error loading some plugins:', err);
+    }
+
+    this.setState({
+      tabs: layoutToLoad.tabs || [],
+      activeTabId: layoutToLoad.activeTabId || (layoutToLoad.tabs && layoutToLoad.tabs[0]?.id),
+      pluginUrls,
+      sidebarCollapsed: false,
+      loadingPlugins: false,
+    });
   }
 
   findNextFreePosition(layout, w, h, step = 20) {
     let y = 0;
     while (y < 10000) {
+      const currentY = y;
       for (let x = 0; x < 3000; x += step) {
         const collides = layout.some(item => {
           const xOverlap = x < item.x + item.width && x + w > item.x;
-          const yOverlap = y < item.y + item.height && y + h > item.y;
+          const yOverlap = currentY < item.y + item.height && currentY + h > item.y;
           return xOverlap && yOverlap;
         });
         if (!collides) {
-          return { x, y };
+          return { x, y: currentY };
         }
       }
       y += step;
@@ -77,9 +91,9 @@ class Dashboard extends React.Component {
 
     this.setState(prev => {
       const newTabs = prev.tabs.filter(tab => tab.id !== tabId);
-      const newActiveTabId = prev.activeTabId === tabId ? 
+      const newActiveTabId = prev.activeTabId === tabId ?
         newTabs[0].id : prev.activeTabId;
-      
+
       return {
         tabs: newTabs,
         activeTabId: newActiveTabId
@@ -89,7 +103,7 @@ class Dashboard extends React.Component {
 
   handleRenameTab = (tabId, newName) => {
     this.setState(prev => ({
-      tabs: prev.tabs.map(tab => 
+      tabs: prev.tabs.map(tab =>
         tab.id === tabId ? { ...tab, name: newName } : tab
       )
     }));
@@ -194,26 +208,56 @@ class Dashboard extends React.Component {
 
   handleClearLayout = () => {
     if (window.confirm('Are you sure you want to clear all tabs?')) {
-      this.setState({
+      this.setState(prevState => ({
         activeTabId: 'tab1',
         tabs: [{
           id: 'tab1',
           name: 'Default Tab',
           figures: [],
           layout: []
-        }]
-      });
-      localStorage.removeItem('dashboard-layout');
+        }],
+        // Keep the plugins URLs intact
+        pluginUrls: prevState.pluginUrls,
+      }));
+      // Save updated layout (with cleared tabs but plugins kept)
+      this.saveLayoutToStorage();
     }
   };
 
-  handleResetLayout = () => {
-    if (window.confirm('Are you sure you want to reset to the default layout?')) {
+  handleClearPlugins = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to clear all plugins? Figures from these plugins will remain available until you refresh the page.'
+      )
+    ) {
+      this.setState(
+        {
+          pluginUrls: [],
+        },
+        () => {
+          this.saveLayoutToStorage();
+        }
+      );
+    }
+  };
+
+  handleResetLayout = async () => {
+    if (!window.confirm('Are you sure you want to reset to the default layout?')) return;
+
+    this.setState({ loadingPlugins: true });
+
+    try {
+      await this.pluginLoader.loadPluginsFromUrls(defaultLayout.pluginUrls || []);
       this.setState({
         activeTabId: defaultLayout.activeTabId,
-        tabs: JSON.parse(JSON.stringify(defaultLayout.tabs))
+        tabs: JSON.parse(JSON.stringify(defaultLayout.tabs)),
+        pluginUrls: defaultLayout.pluginUrls || [],
+        sidebarCollapsed: false,
+        loadingPlugins: false,
       });
-      localStorage.setItem('dashboard-layout', JSON.stringify(defaultLayout));
+    } catch (e) {
+      alert('Failed to load plugins for default layout');
+      this.setState({ loadingPlugins: false });
     }
   };
 
@@ -240,11 +284,11 @@ class Dashboard extends React.Component {
     URL.revokeObjectURL(url);
   };
 
-  handleImport = (jsonString) => {
+  handleImport = async (jsonString) => {
     try {
       const parsed = JSON.parse(jsonString);
-      this.fromJSON(parsed);
-      localStorage.setItem('dashboard-layout', JSON.stringify(parsed));
+      await this.fromJSON(parsed);
+      localStorage.setItem('dashboard-layout', JSON.stringify(this.toJSON()));
     } catch (e) {
       alert('Failed to parse JSON');
     }
@@ -272,42 +316,171 @@ class Dashboard extends React.Component {
     }
   };
 
-  toJSON = () => ({
-    activeTabId: this.state.activeTabId,
-    tabs: this.state.tabs
-  });
-
-  fromJSON = (json) => {
-    if (json && json.tabs && Array.isArray(json.tabs)) {
-      this.setState({
-        activeTabId: json.activeTabId || json.tabs[0].id,
-        tabs: json.tabs
-      });
-    } else {
-      alert('Invalid layout JSON');
+  // Save full layout (including pluginUrls) to localStorage
+  saveLayoutToStorage = () => {
+    try {
+      localStorage.setItem('dashboard-layout', JSON.stringify(this.toJSON()));
+    } catch (e) {
+      console.warn('Failed to save layout to localStorage:', e);
     }
   };
+
+  // Override toJSON to include pluginUrls
+  toJSON = () => ({
+    tabs: this.state.tabs,
+    activeTabId: this.state.activeTabId,
+    pluginUrls: this.state.pluginUrls,
+  });
+
+  // Override fromJSON to load plugins before setting layout state
+  fromJSON = async (json) => {
+    if (!json || !json.tabs || !Array.isArray(json.tabs)) {
+      alert('Invalid layout JSON');
+      return;
+    }
+
+    const pluginUrls = json.pluginUrls || [];
+
+    this.setState({ loadingPlugins: true });
+
+    // Helper function to add timeout to a promise
+    const timeoutPromise = (promise, ms) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error('Plugin loading timed out'));
+        }, ms);
+
+        promise
+          .then((res) => {
+            clearTimeout(timer);
+            resolve(res);
+          })
+          .catch((err) => {
+            clearTimeout(timer);
+            reject(err);
+          });
+      });
+
+    try {
+      // Wait for plugin loading or timeout after 10 seconds (10000 ms)
+      await timeoutPromise(this.pluginLoader.loadPluginsFromUrls(pluginUrls), 10000);
+    } catch (e) {
+      alert('Failed to load some plugins or timeout reached');
+      console.warn(e);
+    }
+
+    this.setState({
+      tabs: json.tabs,
+      activeTabId: json.activeTabId || json.tabs[0].id,
+      pluginUrls,
+      loadingPlugins: false,
+    });
+  };
+
+  // Add new plugin URL dynamically and load it
+handleAddPluginUrl = async (url) => {
+  if (!url) return;
+
+  if (this.state.pluginUrls.includes(url)) {
+    alert('Plugin URL already added');
+    return;
+  }
+
+  this.setState({ loadingPlugins: true });
+  try {
+    // Get registry and figure names before loading plugin
+    const figureRegistry = this.registryManager.get('figures');
+    const beforeNames = figureRegistry.getNames();
+
+    // Load the plugin from URL (which registers figures)
+    await this.pluginLoader.loadPluginFromUrl(url);
+
+    // Get figure names after plugin load
+    const afterNames = figureRegistry.getNames();
+
+    // Determine newly registered figure names
+    const newNames = afterNames.filter(name => !beforeNames.includes(name));
+
+    // Show notification or alert with newly added figures
+    if (newNames.length) {
+      alert(
+        `Plugin loaded successfully from:\n${url}\n\nNew figures registered:\n- ${newNames.join('\n- ')}`
+      );
+    } else {
+      alert(`Plugin loaded from ${url}, but no new figures were registered.`);
+    }
+
+    // Update state and localStorage with new plugin URL
+    this.setState(prev => {
+      const newPluginUrls = [...prev.pluginUrls, url];
+      localStorage.setItem(
+        'dashboard-layout',
+        JSON.stringify({
+          ...this.toJSON(),
+          pluginUrls: newPluginUrls,
+        })
+      );
+
+      return {
+        pluginUrls: newPluginUrls,
+        loadingPlugins: false,
+      };
+    });
+  } catch (e) {
+    alert(`Failed to load plugin from ${url}`);
+    this.setState({ loadingPlugins: false });
+  }
+};
 
   componentDidUpdate(prevProps, prevState) {
     if (
       prevState.tabs !== this.state.tabs ||
-      prevState.activeTabId !== this.state.activeTabId
+      prevState.activeTabId !== this.state.activeTabId ||
+      prevState.pluginUrls !== this.state.pluginUrls
     ) {
-      try {
-        localStorage.setItem(
-          'dashboard-layout',
-          JSON.stringify({
-            tabs: this.state.tabs,
-            activeTabId: this.state.activeTabId
-          })
-        );
-      } catch (e) {
-        console.warn('Failed to save layout to localStorage:', e);
-      }
+      this.saveLayoutToStorage();
     }
   }
 
   render() {
+    if (this.state.loadingPlugins) {
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          backgroundColor: '#f5f7fa',
+          color: '#333',
+          fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+          fontSize: 18,
+          userSelect: 'none',
+        }}>
+          <div style={{
+            border: '6px solid #e0e0e0',
+            borderTop: '6px solid #007bff',
+            borderRadius: '50%',
+            width: 48,
+            height: 48,
+            animation: 'spin 1s linear infinite',
+            marginBottom: 16,
+          }} />
+          <div>Loading plugins, please wait...</div>
+
+          {/* CSS animation keyframes */}
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+      );
+    }
+
     const { activeTabId, tabs, sidebarCollapsed } = this.state;
     const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
     const figureFactory = this.factoryManager.get('figures');
@@ -324,7 +497,7 @@ class Dashboard extends React.Component {
         />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <Sidebar
-            figureTypes={this.registryManager.get('figures').getNames()}
+            figureTypes={this.registryManager.get('figures').getAll()}
             onAddFigure={this.handleAddFigure}
             onExport={this.handleExport}
             onExportActiveTab={this.handleExportActiveTab}
@@ -333,6 +506,8 @@ class Dashboard extends React.Component {
             onClearLayout={this.handleClearLayout}
             onResetLayout={this.handleResetLayout}
             onCollapse={this.handleSidebarCollapse}
+            onAddPluginUrl={this.handleAddPluginUrl}
+            onClearPlugins={this.handleClearPlugins}
           />
           <FigureGrid
             figures={activeTab.figures}

@@ -1,8 +1,20 @@
 // src/App.jsx
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Dashboard from './ui/Dashboard';
 import initRegistries from './registries/init-registries';
 import initFactories from './factories/init-factories';
+import PluginLoader from './plugin/PluginLoader';
+
+// Import base classes that plugins need
+import Plot from './figures/plots/Plot';
+import SettingTypes from './enums/SettingTypes';
+import Figure from './figures/Figure';
+import StaticFigure from './figures/StaticFigure';
+import Table from './figures/tables/Table';
+
+window.React = React; // makes it globally available for plugin eval
+window.ReactDOM = ReactDOM; //  makes it globally available for plugin eval
 
 class App extends React.Component {
   constructor(props) {
@@ -10,6 +22,7 @@ class App extends React.Component {
     this.state = {
       registryManager: null,
       factoryManager: null,
+      pluginLoader: null,
     };
   }
 
@@ -17,17 +30,29 @@ class App extends React.Component {
     const registryManager = initRegistries();
     const factoryManager = initFactories(registryManager);
 
-    this.setState({ registryManager, factoryManager });
+    // Create the plugin loader with needed managers and base classes
+    const pluginLoader = new PluginLoader({
+      registryManager,
+      factoryManager,
+      baseClasses: {
+        // Pass the base classes your plugins need access to
+        Plot: Plot,
+        SettingTypes: SettingTypes,
+        Figure: Figure,
+        StaticFigure: StaticFigure,
+        Table: Table,
+      }
+    });
+    this.setState({ registryManager, factoryManager, pluginLoader });
 
     const figureRegistry = registryManager.get('figures');
-    console.log('Registered figures:', figureRegistry.getNames());
+    console.log('Registered local figures:', figureRegistry.getNames());
   }
 
   render() {
-    const { registryManager, factoryManager } = this.state;
+    const { registryManager, factoryManager, pluginLoader } = this.state;
 
-    // Wait until both managers are initialized
-    if (!registryManager || !factoryManager) {
+    if (!registryManager || !factoryManager || !pluginLoader) {
       return <div>Loading...</div>;
     }
 
@@ -37,6 +62,7 @@ class App extends React.Component {
         <Dashboard
           registryManager={registryManager}
           factoryManager={factoryManager}
+          pluginLoader={pluginLoader}
         />
       </div>
     );

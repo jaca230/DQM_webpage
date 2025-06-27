@@ -1,186 +1,33 @@
 {
-  "activeTabId": "default1",
   "tabs": [
     {
-      "id": "default1",
-      "name": "Calorimeter",
+      "id": "tab1",
+      "name": "Default Tab",
       "figures": [
         {
-          "type": "RandomPlot",
-          "id": "figure_2e38sl7fn",
-          "title": "LYSO 4",
+          "type": "NaluIntegralHistogram",
+          "id": "figure_5nbwk18md",
+          "title": "NaluIntegralHistogram (figure_5nbwk18md)",
           "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_rrmsqm1u1",
-          "title": "LYSO 0",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_s6keg7fy7",
-          "title": "LYSO 5",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_cp36xdo9r",
-          "title": "LYSO 6",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_8t0xdlhcb",
-          "title": "LYSO 3",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_c4u156l1n",
-          "title": "LYSO 1",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_tbvsh7buc",
-          "title": "LYSO 2",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_q39rd0ceq",
-          "title": "LYSO 7",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_zqq5zq46i",
-          "title": "LYSO 8",
-          "settings": {
-            "updateFrequency": 2
-          }
-        },
-        {
-          "type": "RandomPlot",
-          "id": "figure_h9cmccxj7",
-          "title": "LYSO 9",
-          "settings": {
-            "updateFrequency": 2
+            "dataUrl": "http://127.0.0.1:8000/api/json_path?last=1&json_path=/data_products/ChannelIntegralHistogramCollection",
+            "updateFrequency": 2,
+            "selectedChannel": 0
           }
         }
       ],
       "layout": [
         {
-          "id": "figure_2e38sl7fn",
-          "x": 399,
-          "y": 299,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_rrmsqm1u1",
-          "x": 208,
-          "y": 0,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_s6keg7fy7",
-          "x": 801,
-          "y": 299,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_cp36xdo9r",
-          "x": 1204,
-          "y": 297,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_8t0xdlhcb",
+          "id": "figure_5nbwk18md",
           "x": 0,
-          "y": 298,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_c4u156l1n",
-          "x": 607,
           "y": 0,
           "width": 400,
           "height": 300
-        },
-        {
-          "id": "figure_tbvsh7buc",
-          "x": 1007,
-          "y": 0,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_q39rd0ceq",
-          "x": 206,
-          "y": 598,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_zqq5zq46i",
-          "x": 604,
-          "y": 597,
-          "width": 400,
-          "height": 300
-        },
-        {
-          "id": "figure_h9cmccxj7",
-          "x": 1005,
-          "y": 597,
-          "width": 400,
-          "height": 300
-        }
-      ]
-    },
-    {
-      "id": "default2",
-      "name": "Temperature",
-      "figures": [
-        {
-          "type": "ConstantPlot",
-          "id": "figure_moj84qehi",
-          "title": "System Temperature",
-          "settings": {
-            "updateFrequency": 2
-          }
-        }
-      ],
-      "layout": [
-        {
-          "id": "figure_moj84qehi",
-          "x": 0,
-          "y": -0.000030517578125,
-          "width": 1341,
-          "height": 852
         }
       ]
     }
+  ],
+  "activeTabId": "tab1",
+  "pluginUrls": [
+    "https://raw.githubusercontent.com/jaca230/DQM_webpage_nalu_plots_plugin/main/dist/nalu-plots-plugin.es.js"
   ]
 }
