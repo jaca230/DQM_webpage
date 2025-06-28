@@ -2,7 +2,7 @@
   "tabs": [
     {
       "id": "tab1",
-      "name": "Default Tab",
+      "name": "Testing Tab",
       "figures": [
         {
           "type": "NaluTimingTable",
@@ -52,6 +52,16 @@
             "updateFrequency": 2,
             "selectedChannel": 1
           }
+        },
+        {
+          "type": "NaluTimingTicker",
+          "id": "figure_qpmm7zfou",
+          "title": "NaluTimingTicker (figure_qpmm7zfou)",
+          "settings": {
+            "dataUrl": "http://127.0.0.1:8000/api/json_path?last=1&json_path=/data_products/NaluTimeCollection",
+            "updateFrequency": 2,
+            "bufferLength": 20
+          }
         }
       ],
       "layout": [
@@ -89,6 +99,13 @@
           "y": 304,
           "width": 400,
           "height": 300
+        },
+        {
+          "id": "figure_qpmm7zfou",
+          "x": 3,
+          "y": 427,
+          "width": 394,
+          "height": 707
         }
       ]
     }
