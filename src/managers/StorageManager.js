@@ -150,8 +150,30 @@ export default class StorageManager {
    * @returns {Array} Loaded plugins array
    */
   loadPlugins(defaultPlugins = []) {
-    return this.load(this.storageKeys.plugins, defaultPlugins);
+    const savedRaw = localStorage.getItem(this.storageKeys.plugins);
+    
+    if (savedRaw === null) {
+      // No saved plugins key at all → return default plugins
+      return defaultPlugins;
+    }
+    
+    try {
+      const parsed = JSON.parse(savedRaw);
+
+      // If parsed is empty array, return empty array (means load no plugins)
+      if (Array.isArray(parsed) && parsed.length === 0) {
+        return [];
+      }
+
+      // Otherwise return parsed plugins (non-empty array)
+      return parsed;
+    } catch (e) {
+      console.warn('Error parsing saved plugins:', e);
+      // On parse error fallback to defaults
+      return defaultPlugins;
+    }
   }
+
 
   /**
    * Save layout data

@@ -120,7 +120,7 @@ export default class Dashboard extends React.Component {
       this.tabManager.loadFromJSON(savedLayout);
       
       // Initialize plugins
-      await this.pluginService.initialize();
+      await this.pluginService.initialize(defaultPlugins);
       
       // Update state with loaded data
       this.setState({
