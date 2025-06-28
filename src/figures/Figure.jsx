@@ -12,7 +12,7 @@ export default class Figure extends StaticFigure {
         type: SettingTypes.STRING,
         default: 'http://localhost/api/default_data',
         label: 'Data URL',
-        advanced: false,
+        advanced: true,
       },
       updateFrequency: {
         type: SettingTypes.NUMBER,

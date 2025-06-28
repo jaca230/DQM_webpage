@@ -93,8 +93,5 @@
       ]
     }
   ],
-  "activeTabId": "tab1",
-  "pluginUrls": [
-    "https://raw.githubusercontent.com/jaca230/DQM_webpage_nalu_plots_plugin/refs/heads/main/dist/nalu-plugin.bundle.js"
-  ]
+  "activeTabId": "tab1"
 }

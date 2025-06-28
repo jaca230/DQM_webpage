@@ -1,40 +1,22 @@
 import React from 'react';
+import Select from 'react-select';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import PluginRegistrationModal from './modals/PluginRegistrationModal';
+import PluginManagementModal from './modals/PluginManagementModal';
+import LayoutManagementModal from './modals/LayoutManagementModal';
 
 class Sidebar extends React.Component {
-  fileInputRef = React.createRef();
-  tabFileInputRef = React.createRef();
-
   state = {
     selectedFigureType: '',
     collapsed: false,
-    newPluginUrl: '',  // <-- added state for plugin URL input
+
+    // Modal visibility states
+    showPluginRegistrationModal: false,
+    showPluginManagementModal: false,
+    showLayoutManagementModal: false,
   };
 
-  onFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      this.props.onImport(evt.target.result);
-      e.target.value = null;
-    };
-    reader.readAsText(file);
-  };
-
-  onTabFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      this.props.onImportTab(evt.target.result);
-      e.target.value = null;
-    };
-    reader.readAsText(file);
-  };
-
+  // Figure type selection handlers
   onFigureTypeChange = (e) => {
     this.setState({ selectedFigureType: e.target.value });
   };
@@ -46,6 +28,7 @@ class Sidebar extends React.Component {
     }
   };
 
+  // Sidebar collapse toggle
   toggleCollapse = () => {
     this.setState(
       (state) => ({ collapsed: !state.collapsed }),
@@ -55,35 +38,117 @@ class Sidebar extends React.Component {
     );
   };
 
-  onPluginUrlChange = (e) => {
-    this.setState({ newPluginUrl: e.target.value });
+  // Plugin registration modal controls
+  openPluginRegistrationModal = () => {
+    this.setState({ showPluginRegistrationModal: true });
   };
 
-  onAddPluginClick = () => {
-    const url = this.state.newPluginUrl.trim();
-    if (!url) return;
-    this.props.onAddPluginUrl?.(url);
-    this.setState({ newPluginUrl: '' });
+  closePluginRegistrationModal = () => {
+    this.setState({ showPluginRegistrationModal: false });
+  };
+
+  // Plugin management modal controls
+  openPluginManagementModal = () => {
+    this.setState({ showPluginManagementModal: true });
+  };
+
+  closePluginManagementModal = () => {
+    this.setState({ showPluginManagementModal: false });
+  };
+
+  // Layout management modal controls
+  openLayoutManagementModal = () => {
+    this.setState({ showLayoutManagementModal: true });
+  };
+
+  closeLayoutManagementModal = () => {
+    this.setState({ showLayoutManagementModal: false });
+  };
+
+  // Callback when new plugin registered in modal
+  onRegisterPlugin = (pluginInfo) => {
+    this.props.onAddPlugin?.(pluginInfo);
+    this.closePluginRegistrationModal();
+  };
+
+  // Callback when plugin removed from management modal
+  onRemovePlugin = (pluginId) => {
+    this.props.onRemovePlugin?.(pluginId);
+  };
+
+  // Callback for plugin management operations
+  onManagePlugins = (operation, data) => {
+    switch (operation) {
+      case 'remove':
+        this.props.onRemovePlugin?.(data.pluginId);
+        break;
+      case 'export':
+        this.props.onExportPlugins?.();
+        break;
+      case 'import':
+        this.props.onImportPlugins?.(data.jsonString);
+        break;
+      case 'clear':
+        this.props.onClearPlugins?.();
+        break;
+      case 'reset':
+        this.props.onResetPlugins?.();
+        break;
+      case 'load':
+        this.props.onLoadPlugin?.(data.pluginId);
+        break;
+      default:
+        console.warn('Unknown plugin management operation:', operation);
+    }
+  };
+
+  // Callback for layout management operations
+  onManageLayout = (operation, data) => {
+    switch (operation) {
+      case 'exportLayout':
+        this.props.onExportLayout?.();
+        break;
+      case 'importLayout':
+        this.props.onImportLayout?.(data.jsonString);
+        break;
+      case 'clearLayout':
+        this.props.onClearLayout?.();
+        break;
+      case 'resetLayout':
+        this.props.onResetLayout?.();
+        break;
+      case 'exportTab':
+        this.props.onExportTab?.();
+        break;
+      case 'importTab':
+        this.props.onImportTab?.(data.jsonString);
+        break;
+      default:
+        console.warn('Unknown layout management operation:', operation);
+    }
   };
 
   render() {
     const {
-      figureTypes, // expect: Array<[name: string, cls: class]>
-      onExport,
-      onExportActiveTab,
-      onClearLayout,
-      onResetLayout,
-      onClearPlugins
+      figureTypes,
+      plugins = [],
+      tabs = [],
+      activeTabId,
     } = this.props;
-    const { selectedFigureType, collapsed, newPluginUrl } = this.state;
 
-    // Extract display names from classes, keyed by name
-    // figureTypes: [ [name, class], ... ]
+    const {
+      selectedFigureType,
+      collapsed,
+      showPluginRegistrationModal,
+      showPluginManagementModal,
+      showLayoutManagementModal,
+    } = this.state;
+
+    // Prepare display names and handle duplicates
     const displayNames = figureTypes.map(
       ([name, cls]) => cls.displayName || cls.name || name || 'UnnamedFigure'
     );
 
-    // Count duplicates for display names
     const counts = {};
     displayNames.forEach((name) => {
       counts[name] = (counts[name] || 0) + 1;
@@ -97,9 +162,6 @@ class Sidebar extends React.Component {
           .map(([name]) => name)
       );
     }
-
-    // Track how many times we have seen each display name (to disambiguate keys)
-    const seen = {};
 
     return (
       <div
@@ -117,6 +179,7 @@ class Sidebar extends React.Component {
           alignItems: collapsed ? 'center' : 'stretch',
         }}
       >
+        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -130,9 +193,7 @@ class Sidebar extends React.Component {
           }}
         >
           {!collapsed && (
-            <h3
-              style={{ margin: 0, fontWeight: '600', fontSize: '1.2rem' }}
-            >
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '1.2rem' }}>
               Sidebar
             </h3>
           )}
@@ -151,99 +212,43 @@ class Sidebar extends React.Component {
               width: 32,
               height: 32,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = '#e0e0e0')
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = 'transparent')
             }
+            aria-label="Toggle sidebar collapse"
           >
             {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
           </button>
         </div>
 
+        {/* Main content - hidden if collapsed */}
         {!collapsed && (
           <>
-            <div style={{ marginBottom: '1rem' }}>
-              <h4>Global Layout</h4>
-              <button
-                onClick={onExport}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
-              >
-                Export All Tabs
-              </button>
-              <button
-                onClick={() => this.fileInputRef.current?.click()}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
-              >
-                Import Layout (Replace All)
-              </button>
-              <button
-                onClick={onResetLayout}
-                style={{
-                  width: '100%',
-                  marginBottom: '0.5rem',
-                  padding: '0.5rem',
-                  backgroundColor: '#e8f0fe',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#c2d1ff')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e8f0fe')}
-              >
-                Reset to Default Layout
-              </button>
-              <button
-                onClick={onClearLayout}
-                style={{
-                  width: '100%',
-                  marginBottom: '0.5rem',
-                  padding: '0.5rem',
-                  backgroundColor: '#fdd',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fbb')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fdd')}
-              >
-                Clear All Tabs
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <h4>Active Tab</h4>
-              <button
-                onClick={onExportActiveTab}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
-              >
-                Export Current Tab
-              </button>
-              <button
-                onClick={() => this.tabFileInputRef.current?.click()}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
-              >
-                Import Tab (Append)
-              </button>
-            </div>
-
+            {/* Available Figures */}
             <div style={{ marginBottom: '1rem' }}>
               <h3>Available Figures</h3>
-              <select
-                value={selectedFigureType}
-                onChange={this.onFigureTypeChange}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.4rem' }}
-              >
-                <option value="" disabled>
-                  Select a figure type...
-                </option>
-                {figureTypes.map(([name, cls]) => {
-                  const displayName = cls.displayName || cls.name || name || 'UnnamedFigure';
-                  seen[displayName] = (seen[displayName] || 0) + 1;
-                  const key = counts[displayName] > 1 ? `${displayName}_${seen[displayName]}` : displayName;
-
-                  return (
-                    <option key={key} value={name}>
-                      {key}
-                    </option>
-                  );
-                })}
-              </select>
+              <Select
+                value={
+                  selectedFigureType
+                    ? {
+                        value: selectedFigureType,
+                        label:
+                          figureTypes.find(([name]) => name === selectedFigureType)?.[1]
+                            .displayName || selectedFigureType,
+                      }
+                    : null
+                }
+                onChange={(option) =>
+                  this.setState({ selectedFigureType: option?.value || '' })
+                }
+                options={figureTypes.map(([name, cls]) => ({
+                  value: name,
+                  label: cls.displayName || cls.name || name || 'UnnamedFigure',
+                }))}
+                placeholder="Select Figure.."
+                isClearable
+              />
               <button
                 onClick={this.onAddSelectedFigure}
                 disabled={!selectedFigureType}
@@ -253,57 +258,59 @@ class Sidebar extends React.Component {
               </button>
             </div>
 
+            {/* Layout Management */}
             <div style={{ marginBottom: '1rem' }}>
-              <h4>Load Plugin</h4>
-              <input
-                type="text"
-                placeholder="Enter plugin URL..."
-                value={newPluginUrl}
-                onChange={this.onPluginUrlChange}
-                style={{
-                  width: '100%',
-                  padding: '0.4rem',
-                  marginBottom: '0.5rem',
-                  boxSizing: 'border-box',
-                }}
-              />
+              <h3>Layout</h3>
               <button
-                onClick={this.onAddPluginClick}
-                disabled={!newPluginUrl.trim()}
+                onClick={this.openLayoutManagementModal}
                 style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem' }}
+                aria-label="Manage layout"
+              >
+                Manage Layout
+              </button>
+            </div>
+
+            {/* Plugin Management Buttons */}
+            <h3>Plugins</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                onClick={this.openPluginRegistrationModal}
+                style={{ padding: '0.5rem' }}
+                aria-label="Register new plugin"
               >
                 Add Plugin
               </button>
               <button
-                onClick={onClearPlugins}
-                style={{
-                  width: '100%',
-                  marginBottom: '0.5rem',
-                  padding: '0.5rem',
-                  backgroundColor: '#fdd',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fbb')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fdd')}
+                onClick={this.openPluginManagementModal}
+                style={{ padding: '0.5rem' }}
+                aria-label="Manage existing plugins"
               >
-                Clear All Plugins
+                Manage Plugins
               </button>
             </div>
           </>
         )}
 
-        <input
-          type="file"
-          accept="application/json"
-          style={{ display: 'none' }}
-          ref={this.fileInputRef}
-          onChange={this.onFileChange}
+        {/* Plugin modals */}
+        <PluginRegistrationModal
+          visible={showPluginRegistrationModal}
+          onRegister={this.onRegisterPlugin}
+          onClose={this.closePluginRegistrationModal}
         />
-        <input
-          type="file"
-          accept="application/json"
-          style={{ display: 'none' }}
-          ref={this.tabFileInputRef}
-          onChange={this.onTabFileChange}
+        <PluginManagementModal
+          visible={showPluginManagementModal}
+          plugins={plugins}
+          onManage={this.onManagePlugins}
+          onClose={this.closePluginManagementModal}
+        />
+        
+        {/* Layout management modal */}
+        <LayoutManagementModal
+          visible={showLayoutManagementModal}
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onManage={this.onManageLayout}
+          onClose={this.closeLayoutManagementModal}
         />
       </div>
     );

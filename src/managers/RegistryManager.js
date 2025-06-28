@@ -1,5 +1,3 @@
-// src/registries/RegistryManager.js
-
 class RegistryManager {
   constructor() {
     this.registries = new Map();

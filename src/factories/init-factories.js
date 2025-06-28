@@ -1,5 +1,5 @@
 // src/init-factories.js
-import FactoryManager from './FactoryManager';
+import FactoryManager from '../managers/FactoryManager';
 import FigureFactory from './FigureFactory';
 
 export default function initFactories(registryManager) {

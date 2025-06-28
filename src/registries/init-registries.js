@@ -1,5 +1,5 @@
 // src/init-registries.js
-import RegistryManager from './RegistryManager';
+import RegistryManager from '../managers/RegistryManager';
 import FigureRegistry from './FigureRegistry';
 
 export default function initRegistries() {

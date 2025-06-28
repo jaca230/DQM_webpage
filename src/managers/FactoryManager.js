@@ -1,4 +1,3 @@
-// src/factories/FactoryManager.js
 export default class FactoryManager {
   constructor() {
     this.factories = new Map();
