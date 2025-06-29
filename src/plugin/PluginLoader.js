@@ -25,21 +25,41 @@ export default class PluginLoader {
 
       const codeStr = await response.text();
 
+      let result;
       // Choose loading method based on pluginInfo.loadMethod
       switch (pluginInfo.loadMethod) {
         case 'eval':
-          return await this._loadViaEval(codeStr, pluginInfo);
+          result = await this._loadViaEval(codeStr, pluginInfo);
+          break;
         case 'ES':
         case 'module':
-          return await this._loadViaModule(codeStr, pluginInfo);
+          result = await this._loadViaModule(codeStr, pluginInfo);
+          break;
         case 'script':
-          return await this._loadViaScript(codeStr, pluginInfo);
+          result = await this._loadViaScript(codeStr, pluginInfo);
+          break;
         default:
           throw new Error(`Unknown loading method: ${pluginInfo.loadMethod}`);
       }
+
+      // Return successful result
+      return {
+        pluginInfo,
+        success: true,
+        error: null,
+        newNames: result.newNames,
+        method: result.method,
+      };
     } catch (err) {
       console.error(`Failed to load plugin ${pluginInfo.name} (${pluginInfo.id}) from ${pluginInfo.url}:`, err);
-      throw err;
+      // Return failure info instead of throwing
+      return {
+        pluginInfo,
+        success: false,
+        error: err.message || String(err),
+        newNames: [],
+        method: pluginInfo.loadMethod || null,
+      };
     }
   }
 
@@ -207,29 +227,16 @@ export default class PluginLoader {
   }
 
   /**
-   * Load multiple plugins from PluginInfo objects
-   * @param {PluginInfo[]} pluginInfos - Array of plugin configurations
-   * @param {number} timeoutMs - Timeout in milliseconds
-   * @returns {Promise<Object[]>} Array of load results
+   * Load multiple plugins from PluginInfo objects, reporting detailed results
+   * @param {PluginInfo[]} pluginInfos
+   * @param {number} timeoutMs
+   * @returns {Promise<Array>} Array of load results (success, errors, newNames, etc)
    */
   async loadPlugins(pluginInfos = [], timeoutMs = 15000) {
     const results = [];
     for (const pluginInfo of pluginInfos) {
-      try {
-        const result = await this.loadPlugin(pluginInfo, timeoutMs);
-        results.push({ 
-          pluginInfo, 
-          success: true, 
-          ...result 
-        });
-      } catch (error) {
-        results.push({ 
-          pluginInfo, 
-          success: false, 
-          error: error.message, 
-          method: pluginInfo.loadMethod 
-        });
-      }
+      const result = await this.loadPlugin(pluginInfo, timeoutMs);
+      results.push(result);
     }
     return results;
   }
@@ -258,26 +265,30 @@ export default class PluginLoader {
    * @returns {Promise<Object>} Load result
    */
   async loadPluginWithFallback(pluginInfo, timeoutMs = 15000, fallbackMethods = ['ES', 'eval', 'script']) {
-    let lastError;
-    const originalMethod = pluginInfo.loadMethod;
-    
-    // Try the specified method first, then fallbacks
+    let lastError = null;
+    const originalMethod = pluginInfo.loadMethod || 'ES';
+
     const methodsToTry = [originalMethod, ...fallbackMethods.filter(m => m !== originalMethod)];
-    
+
     for (const method of methodsToTry) {
-      try {
-        console.debug(`Attempting to load plugin ${pluginInfo.name} via ${method}`);
-        const modifiedPluginInfo = { ...pluginInfo, loadMethod: method };
-        const result = await this.loadPlugin(modifiedPluginInfo, timeoutMs);
-        console.debug(`Successfully loaded plugin ${pluginInfo.name} via ${method}`);
-        return result;
-      } catch (error) {
-        console.warn(`Failed to load plugin ${pluginInfo.name} via ${method}:`, error.message);
-        lastError = error;
+      const modPluginInfo = { ...pluginInfo, loadMethod: method };
+      const result = await this.loadPlugin(modPluginInfo, timeoutMs);
+
+      if (result.success) {
+        return result; // success, stop trying
+      } else {
+        lastError = result.error;
+        console.warn(`Failed to load plugin ${pluginInfo.name} via ${method}:`, lastError);
       }
     }
-    
-    throw new Error(`Failed to load plugin ${pluginInfo.name} with all methods. Last error: ${lastError.message}`);
+
+    return {
+      pluginInfo,
+      success: false,
+      error: `All methods failed. Last error: ${lastError}`,
+      newNames: [],
+      method: null,
+    };
   }
 
   /**

@@ -67,8 +67,7 @@ class Sidebar extends React.Component {
 
   // Callback when new plugin registered in modal
   onRegisterPlugin = (pluginInfo) => {
-    this.props.onAddPlugin?.(pluginInfo);
-    this.closePluginRegistrationModal();
+    return this.props.onAddPlugin?.(pluginInfo); // Let modal handle success UI and closing
   };
 
   // Callback when plugin removed from management modal

@@ -1,6 +1,3 @@
-/**
- * Service class that manages plugin operations using PluginLoader
- */
 export default class PluginManagementService {
   constructor(pluginLoader, storageManager) {
     this.pluginLoader = pluginLoader;
@@ -8,113 +5,105 @@ export default class PluginManagementService {
     this.plugins = [];
     this.loading = false;
     this.listeners = new Set();
+
+    this.loadingTimeoutMs = 0;
+    this.loadingStartTime = 0;
+    this.loadingTimeoutId = null;
   }
 
-  /**
-   * Add a change listener
-   * @param {Function} listener - Called when plugins change
-   */
   addListener(listener) {
     this.listeners.add(listener);
   }
 
-  /**
-   * Remove a change listener
-   * @param {Function} listener - Listener to remove
-   */
   removeListener(listener) {
     this.listeners.delete(listener);
   }
 
-  /**
-   * Notify all listeners of changes
-   */
   notifyListeners() {
-    this.listeners.forEach(listener => listener({
-      plugins: this.getPlugins(),
-      loading: this.isLoading()
-    }));
+    this.listeners.forEach(listener =>
+      listener({
+        plugins: this.getPlugins(),
+        loading: this.isLoading(),
+        loadingRemainingMs: this.getLoadingRemainingMs(),
+      })
+    );
   }
 
-  /**
-   * Get current plugins
-   * @returns {Array} Array of plugin objects
-   */
   getPlugins() {
     return [...this.plugins];
   }
 
-  /**
-   * Check if currently loading plugins
-   * @returns {boolean} True if loading
-   */
   isLoading() {
     return this.loading;
   }
 
-  /**
-   * Set loading state and notify listeners
-   * @param {boolean} loading - Loading state
-   */
-  setLoading(loading) {
+  setLoading(loading, timeoutMs = 0) {
     this.loading = loading;
+    if (loading) {
+      this.loadingTimeoutMs = timeoutMs;
+      this.loadingStartTime = Date.now();
+
+      if (this.loadingTimeoutId) clearTimeout(this.loadingTimeoutId);
+      if (timeoutMs > 0) {
+        this.loadingTimeoutId = setTimeout(() => {
+          this.loadingTimeoutId = null;
+          this.setLoading(false);
+        }, timeoutMs);
+      }
+    } else {
+      this.loadingTimeoutMs = 0;
+      this.loadingStartTime = 0;
+      if (this.loadingTimeoutId) {
+        clearTimeout(this.loadingTimeoutId);
+        this.loadingTimeoutId = null;
+      }
+    }
     this.notifyListeners();
   }
 
-  /**
-   * Initialize plugins from storage and default plugins
-   * @param {Array} defaultPlugins - Default plugins to load if none in storage
-   * @returns {Promise<void>}
-   */
-  async initialize(defaultPlugins = []) {
-    this.setLoading(true);
+  getLoadingRemainingMs() {
+    if (!this.loading || !this.loadingTimeoutMs) return 0;
+    const elapsed = Date.now() - this.loadingStartTime;
+    const remaining = this.loadingTimeoutMs - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
 
+  async initialize(defaultPlugins = []) {
+    this.setLoading(true, 15000);
     try {
-      // Load plugins from storage
       const savedPlugins = this.storageManager.loadPlugins(defaultPlugins);
       const pluginsForStartup = savedPlugins.filter(p => p.loadOnStartup);
-
-      // Start with all plugins
       this.plugins = [...savedPlugins];
-
-      // Load startup plugins
       if (pluginsForStartup.length > 0) {
         await this.loadPluginsBatch(pluginsForStartup);
       }
     } catch (e) {
       console.error('Error initializing plugins:', e);
     }
-
     this.setLoading(false);
   }
 
-  /**
-   * Load multiple plugins in batch
-   * @param {Array} pluginsToLoad - Array of plugin info objects
-   * @returns {Promise<Array>} Array of load results
-   */
   async loadPluginsBatch(pluginsToLoad) {
-    if (!pluginsToLoad || pluginsToLoad.length === 0) {
-      return [];
-    }
+    if (!pluginsToLoad || pluginsToLoad.length === 0) return [];
 
+    this.setLoading(true, 15000);
     try {
       const results = await this.pluginLoader.loadPlugins(pluginsToLoad);
-      
-      // Update loaded status based on results
+
       this.plugins = this.plugins.map(plugin => {
         const result = results.find(r => r.pluginInfo.id === plugin.id);
         if (result) {
-          return { 
-            ...plugin, 
+          return {
+            ...plugin,
             loaded: result.success,
-            loadMethod: result.success ? result.method : plugin.loadMethod
+            loadMethod: result.success ? result.method : plugin.loadMethod,
+            newFigures: result.success ? result.newNames : [],
+            lastError: result.success ? null : result.error,
           };
         }
         return plugin;
       });
 
-      // Log results
       results.forEach(result => {
         if (result.success) {
           console.log(`Loaded plugin: ${result.pluginInfo.name} (${result.newNames.length} figures)`);
@@ -127,30 +116,24 @@ export default class PluginManagementService {
       return results;
     } catch (e) {
       console.error('Error loading plugins batch:', e);
-      
-      // Mark all plugins as failed
       this.plugins = this.plugins.map(plugin => ({
         ...plugin,
-        loaded: pluginsToLoad.some(p => p.id === plugin.id) ? false : plugin.loaded
+        loaded: pluginsToLoad.some(p => p.id === plugin.id) ? false : plugin.loaded,
+        newFigures: [],
+        lastError: pluginsToLoad.some(p => p.id === plugin.id) ? e.message : plugin.lastError,
       }));
-      
       this.notifyListeners();
       throw e;
+    } finally {
+      this.setLoading(false);
     }
   }
 
-  /**
-   * Add a new plugin and optionally load it
-   * @param {Object} pluginInfo - Plugin information object
-   * @param {boolean} loadImmediately - Whether to load the plugin immediately
-   * @returns {Promise<boolean>} True if added (and loaded if requested) successfully
-   */
   async addPlugin(pluginInfo, loadImmediately = true) {
     if (!pluginInfo || !pluginInfo.url) {
       throw new Error('Plugin info must include a URL');
     }
 
-    // Ensure we have required PluginInfo fields
     const fullPluginInfo = {
       id: pluginInfo.id || `plugin-${Date.now()}`,
       name: pluginInfo.name || 'Unnamed Plugin',
@@ -160,48 +143,54 @@ export default class PluginManagementService {
       loadOnStartup: pluginInfo.loadOnStartup ?? true,
       loadMethod: pluginInfo.loadMethod || 'ES',
       metadata: pluginInfo.metadata || {},
-      ...pluginInfo // Allow override of defaults
+      newFigures: [],
+      lastError: null,
+      ...pluginInfo,
     };
 
-    // Check for duplicate URLs
     if (this.plugins.find(p => p.url === fullPluginInfo.url)) {
       throw new Error('Plugin URL already exists');
     }
 
     if (loadImmediately) {
-      this.setLoading(true);
+      this.setLoading(true, 15000);
       try {
-        // Load plugin using fallback method
         const result = await this.pluginLoader.loadPluginWithFallback(
-          fullPluginInfo, 
-          15000, 
+          fullPluginInfo,
+          15000,
           ['ES', 'eval', 'script']
         );
 
         const newPlugin = {
           ...fullPluginInfo,
           loaded: true,
-          loadMethod: result.method
+          loadMethod: result.method,
+          newFigures: result.newNames,
+          lastError: null,
         };
 
         console.log(`Loaded plugin: ${newPlugin.name} via ${result.method} (${result.newNames.length} figures)`);
-        
+
         this.plugins.push(newPlugin);
         this.storageManager.savePlugins(this.plugins);
         this.setLoading(false);
-        return true;
+        return result;
       } catch (e) {
         console.error(`Failed to load plugin ${fullPluginInfo.name}:`, e);
-        
-        // Still add the plugin but mark it as failed
-        const failedPlugin = { ...fullPluginInfo, loaded: false };
+
+        const failedPlugin = {
+          ...fullPluginInfo,
+          loaded: false,
+          newFigures: [],
+          lastError: e.message || String(e),
+        };
+
         this.plugins.push(failedPlugin);
         this.storageManager.savePlugins(this.plugins);
         this.setLoading(false);
         throw e;
       }
     } else {
-      // Just add without loading
       this.plugins.push(fullPluginInfo);
       this.storageManager.savePlugins(this.plugins);
       this.notifyListeners();
@@ -209,86 +198,73 @@ export default class PluginManagementService {
     }
   }
 
-  /**
-   * Remove a plugin by ID
-   * @param {string} pluginId - Plugin ID to remove
-   * @returns {boolean} True if removed successfully
-   */
   removePlugin(pluginId) {
-    if (!pluginId) {
-      return false;
-    }
-
+    if (!pluginId) return false;
     const initialLength = this.plugins.length;
     this.plugins = this.plugins.filter(p => p.id !== pluginId);
-    
     if (this.plugins.length < initialLength) {
       this.storageManager.savePlugins(this.plugins);
       this.notifyListeners();
       return true;
     }
-    
     return false;
   }
 
-  /**
-   * Load a specific plugin manually
-   * @param {string} pluginId - Plugin ID to load
-   * @returns {Promise<boolean>} True if loaded successfully
-   */
   async loadPlugin(pluginId) {
     const plugin = this.plugins.find(p => p.id === pluginId);
     if (!plugin) {
       throw new Error(`Plugin with ID ${pluginId} not found`);
     }
 
-    this.setLoading(true);
+    this.setLoading(true, 15000);
     try {
       const result = await this.pluginLoader.loadPluginWithFallback(
-        plugin, 
-        15000, 
+        plugin,
+        15000,
         ['ES', 'eval', 'script']
       );
 
       console.log(`Manually loaded plugin: ${plugin.name} via ${result.method} (${result.newNames.length} figures)`);
 
-      // Update plugin status
-      this.plugins = this.plugins.map(p => 
-        p.id === pluginId ? { 
-          ...p, 
-          loaded: true, 
-          loadMethod: result.method 
-        } : p
+      this.plugins = this.plugins.map(p =>
+        p.id === pluginId
+          ? {
+              ...p,
+              loaded: true,
+              loadMethod: result.method,
+              newFigures: result.newNames,
+              lastError: null,
+            }
+          : p
       );
 
       this.storageManager.savePlugins(this.plugins);
       this.setLoading(false);
-      return true;
+      return result;
     } catch (e) {
       console.error(`Failed to load plugin ${plugin.name}:`, e);
-      
-      // Update plugin status as failed
-      this.plugins = this.plugins.map(p => 
-        p.id === pluginId ? { ...p, loaded: false } : p
+
+      this.plugins = this.plugins.map(p =>
+        p.id === pluginId
+          ? {
+              ...p,
+              loaded: false,
+              newFigures: [],
+              lastError: e.message || String(e),
+            }
+          : p
       );
-      
+
       this.setLoading(false);
       throw e;
     }
   }
 
-  /**
-   * Reload all plugins marked for startup
-   * @returns {Promise<Array>} Array of load results
-   */
   async reloadStartupPlugins() {
     const pluginsForReload = this.plugins.filter(p => p.loadOnStartup);
-    
-    if (pluginsForReload.length === 0) {
-      return [];
-    }
+    if (pluginsForReload.length === 0) return [];
 
-    this.setLoading(true);
+    this.setLoading(true, 15000);
     try {
       const results = await this.loadPluginsBatch(pluginsForReload);
       this.storageManager.savePlugins(this.plugins);
@@ -298,53 +274,32 @@ export default class PluginManagementService {
     }
   }
 
-  /**
-   * Update plugin information
-   * @param {string} pluginId - Plugin ID to update
-   * @param {Object} updates - Updates to apply
-   * @returns {boolean} True if updated successfully
-   */
   updatePlugin(pluginId, updates) {
     const pluginIndex = this.plugins.findIndex(p => p.id === pluginId);
-    if (pluginIndex === -1) {
-      return false;
-    }
+    if (pluginIndex === -1) return false;
 
-    this.plugins[pluginIndex] = { ...this.plugins[pluginIndex], ...updates };
+    this.plugins[pluginIndex] = {
+      ...this.plugins[pluginIndex],
+      ...updates,
+    };
+
     this.storageManager.savePlugins(this.plugins);
     this.notifyListeners();
     return true;
   }
 
-  /**
-   * Get plugin by ID
-   * @param {string} pluginId - Plugin ID to find
-   * @returns {Object|null} Plugin object or null if not found
-   */
   getPlugin(pluginId) {
     return this.plugins.find(p => p.id === pluginId) || null;
   }
 
-  /**
-   * Get loaded plugins
-   * @returns {Array} Array of loaded plugin objects
-   */
   getLoadedPlugins() {
     return this.plugins.filter(p => p.loaded);
   }
 
-  /**
-   * Get failed plugins
-   * @returns {Array} Array of failed plugin objects
-   */
   getFailedPlugins() {
     return this.plugins.filter(p => p.loadOnStartup && !p.loaded);
   }
 
-  /**
-   * Clear all plugins
-   * @returns {boolean} True if cleared successfully
-   */
   clearPlugins() {
     this.plugins = [];
     this.storageManager.clearPlugins();
@@ -352,73 +307,45 @@ export default class PluginManagementService {
     return true;
   }
 
-  /**
-   * Reset plugins to default set
-   * @param {Array} defaultPlugins - Default plugins to reset to
-   * @returns {Promise<void>}
-   */
   async resetToDefault(defaultPlugins = []) {
-    this.setLoading(true);
-    
+    this.setLoading(true, 15000);
     try {
-      // Reset plugins array
       this.plugins = [...defaultPlugins];
-      
-      // Load startup plugins
       const pluginsForStartup = defaultPlugins.filter(p => p.loadOnStartup);
       if (pluginsForStartup.length > 0) {
         await this.loadPluginsBatch(pluginsForStartup);
       }
-      
       this.storageManager.savePlugins(this.plugins);
     } finally {
       this.setLoading(false);
     }
   }
 
-  /**
-   * Import plugins from array
-   * @param {Array} pluginsArray - Array of plugin objects to import
-   * @returns {Promise<void>}
-   */
   async importPlugins(pluginsArray) {
     if (!Array.isArray(pluginsArray)) {
       throw new Error('Invalid plugins array');
     }
 
-    this.setLoading(true);
-    
+    this.setLoading(true, 15000);
     try {
-      // Set plugins
       this.plugins = [...pluginsArray];
-      
-      // Load startup plugins
       const pluginsForStartup = pluginsArray.filter(p => p.loadOnStartup);
       if (pluginsForStartup.length > 0) {
         await this.loadPluginsBatch(pluginsForStartup);
       }
-      
       this.storageManager.savePlugins(this.plugins);
     } finally {
       this.setLoading(false);
     }
   }
 
-  /**
-   * Export plugins for backup/sharing
-   * @returns {Array} Sanitized plugins array
-   */
   exportPlugins() {
     return this.plugins.map(plugin => ({
       ...plugin,
-      loaded: false // Always export with loaded: false
+      loaded: false,
     }));
   }
 
-  /**
-   * Get plugin statistics
-   * @returns {Object} Statistics object
-   */
   getStatistics() {
     const total = this.plugins.length;
     const loaded = this.plugins.filter(p => p.loaded).length;
@@ -430,7 +357,7 @@ export default class PluginManagementService {
       loaded,
       failed,
       startup,
-      loadedPercentage: total > 0 ? Math.round((loaded / total) * 100) : 0
+      loadedPercentage: total > 0 ? Math.round((loaded / total) * 100) : 0,
     };
   }
 }

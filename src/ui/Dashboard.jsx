@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import FigureGrid from './FigureGrid';
 import TabsBar from './TabsBar';
+import LoadingScreen from './LoadingScreen';
 import TabManager from '../managers/TabManager';
 import FigureManager from '../managers/FigureManager';
 import StorageManager from '../managers/StorageManager';
@@ -36,13 +37,17 @@ export default class Dashboard extends React.Component {
       // Plugin state
       plugins: [],
       loadingPlugins: true,
-      
+      loadingRemainingMs: 0,
+
       // UI state
       sidebarCollapsed: false,
     };
 
     // Bind event handlers
     this.setupEventHandlers();
+
+    // Timer ID for loading countdown
+    this.loadingTimerId = null;
   }
 
   /**
@@ -92,15 +97,69 @@ export default class Dashboard extends React.Component {
     }
   };
 
-  /**
-   * Handle plugin service changes
-   */
-  handlePluginServiceChange = ({ plugins, loading }) => {
-    this.setState({ 
-      plugins, 
-      loadingPlugins: loading 
-    });
-  };
+/**
+ * Handle plugin service changes including loading remaining time
+ */
+handlePluginServiceChange = ({ plugins, loading, loadingRemainingMs }) => {
+  this.setState({ plugins });
+
+  // Only update loadingRemainingMs timer during initial startup loading
+  if (this.state.loadingPlugins) {
+    // Always update the remaining time from the service
+    this.setState({ loadingRemainingMs: loadingRemainingMs || 0 });
+
+    if (loading) {
+      // Start the countdown timer if not already running
+      if (!this.loadingTimerId) {
+        this.loadingTimerId = setInterval(() => {
+          // Get the current remaining time from the service
+          const remaining = this.pluginService.getLoadingRemainingMs();
+          
+          // Update state with current remaining time
+          this.setState({ loadingRemainingMs: remaining });
+          
+          // Check if timeout reached
+          if (remaining <= 0) {
+            clearInterval(this.loadingTimerId);
+            this.loadingTimerId = null;
+            // The service should handle the timeout itself
+            // We just need to clean up our interval
+          }
+        }, 100); // Update every 100ms for smoother countdown
+      }
+    } else {
+      // Loading finished - clean up
+      this.setState({ 
+        loadingRemainingMs: 0,
+        loadingPlugins: false // Clear the loading flag
+      });
+      
+      if (this.loadingTimerId) {
+        clearInterval(this.loadingTimerId);
+        this.loadingTimerId = null;
+      }
+    }
+  }
+};
+
+/**
+ * Handle loading timeout - this might not be needed since service handles it
+ */
+handleLoadingTimeout = () => {
+  console.warn('Plugin loading timed out');
+  this.setState({ 
+    loadingPlugins: false,
+    loadingRemainingMs: 0 
+  });
+  
+  if (this.loadingTimerId) {
+    clearInterval(this.loadingTimerId);
+    this.loadingTimerId = null;
+  }
+  
+  // Optionally show a notification
+  // alert('Plugin loading timed out. Some plugins may not have loaded correctly.');
+};
 
   /**
    * Handle storage events
@@ -115,19 +174,17 @@ export default class Dashboard extends React.Component {
    */
   async componentDidMount() {
     try {
-      // Load layout from storage
       const savedLayout = this.storageManager.loadLayout(defaultLayout);
       this.tabManager.loadFromJSON(savedLayout);
       
-      // Initialize plugins
+      // Initialize plugins (this triggers loading screen)
       await this.pluginService.initialize(defaultPlugins);
-      
-      // Update state with loaded data
+
+      // Update state after loading
       this.setState({
         tabs: this.tabManager.getTabs(),
         activeTabId: this.tabManager.getActiveTabId(),
         plugins: this.pluginService.getPlugins(),
-        loadingPlugins: false,
       });
     } catch (error) {
       console.error('Error initializing dashboard:', error);
@@ -144,6 +201,12 @@ export default class Dashboard extends React.Component {
     this.figureManager.removeListener(this.handleFigureManagerChange);
     this.pluginService.removeListener(this.handlePluginServiceChange);
     this.storageManager.removeListener(this.handleStorageEvent);
+
+    // Clear loading timer if any
+    if (this.loadingTimerId) {
+      clearInterval(this.loadingTimerId);
+      this.loadingTimerId = null;
+    }
   }
 
   // Tab event handlers
@@ -230,9 +293,11 @@ export default class Dashboard extends React.Component {
   // Plugin event handlers
   handleAddPlugin = async (pluginInfo) => {
     try {
-      await this.pluginService.addPlugin(pluginInfo);
+      const result = await this.pluginService.addPlugin(pluginInfo);
+      return result;
     } catch (error) {
       alert(`Failed to add plugin: ${error.message}`);
+      return { success: false, error: error.message };
     }
   };
 
@@ -242,9 +307,16 @@ export default class Dashboard extends React.Component {
 
   handleLoadPlugin = async (pluginId) => {
     try {
-      await this.pluginService.loadPlugin(pluginId);
+      const result = await this.pluginService.loadPlugin(pluginId);
+
+      if (!result.success) {
+        alert(`Failed to load plugin: ${result.pluginInfo?.name || pluginId}\n\n${result.error}`);
+      } else {
+        //console.log(`Plugin loaded via ${result.method}:`, result.pluginInfo.name);
+        //console.log(`Figures registered:`, result.newNames);
+      }
     } catch (error) {
-      alert(`Failed to load plugin: ${error.message}`);
+      alert(`Unexpected error while loading plugin: ${error.message}`);
     }
   };
 
@@ -358,62 +430,24 @@ export default class Dashboard extends React.Component {
     this.setState({ sidebarCollapsed: collapsed });
   };
 
-  /**
-   * Render loading screen
-   */
-  renderLoadingScreen() {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundColor: '#f5f7fa',
-        color: '#333',
-        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-        fontSize: 18,
-        userSelect: 'none',
-      }}>
-        <div style={{
-          border: '6px solid #e0e0e0',
-          borderTop: '6px solid #007bff',
-          borderRadius: '50%',
-          width: 48,
-          height: 48,
-          animation: 'spin 1s linear infinite',
-          marginBottom: 16,
-        }} />
-        <div>Loading plugins, please wait...</div>
-
-        <style>
-          {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}
-        </style>
-      </div>
-    );
-  }
-
   // Update the render method to pass additional props to Sidebar:
   render() {
-    const { loadingPlugins, tabs, activeTabId, sidebarCollapsed, plugins } = this.state;
+    const { loadingPlugins, loadingRemainingMs, tabs, activeTabId, sidebarCollapsed, plugins } = this.state;
 
-    // Show loading screen while initializing
+    // Only show full-page loading screen on initial load
     if (loadingPlugins) {
-      return this.renderLoadingScreen();
+      return (
+        <LoadingScreen 
+          remainingMs={loadingRemainingMs} 
+          message="Loading plugins, please wait..."
+          onTimeout={this.handleLoadingTimeout}
+        />
+      );
     }
 
-    // Get active tab
+    // Normal dashboard UI below
     const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
-    
-    // Get figure factory
     const figureFactory = this.factoryManager.get('figures');
-    
-    // Get available figure types
     const figureTypes = this.registryManager.get('figures').getAll();
 
     return (
