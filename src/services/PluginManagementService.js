@@ -161,42 +161,48 @@ export default class PluginManagementService {
           ['ES', 'eval', 'script']
         );
 
-        const newPlugin = {
-          ...fullPluginInfo,
-          loaded: true,
-          loadMethod: result.method,
-          newFigures: result.newNames,
-          lastError: null,
-        };
-
-        console.log(`Loaded plugin: ${newPlugin.name} via ${result.method} (${result.newNames.length} figures)`);
-
-        this.plugins.push(newPlugin);
-        this.storageManager.savePlugins(this.plugins);
         this.setLoading(false);
-        return result;
+
+        if (result.success) {
+          // Only add plugin if loading succeeded
+          const newPlugin = {
+            ...fullPluginInfo,
+            loaded: true,
+            loadMethod: result.method,
+            newFigures: result.newNames,
+            lastError: null,
+          };
+
+          console.log(`Loaded plugin: ${newPlugin.name} via ${result.method} (${result.newNames.length} figures)`);
+
+          this.plugins.push(newPlugin);
+          this.storageManager.savePlugins(this.plugins);
+          return result;
+        } else {
+          // Loading failed, do not add plugin, just return failure info
+          console.warn(`Plugin loading failed for ${fullPluginInfo.name}: ${result.error}`);
+          return result;
+        }
       } catch (e) {
-        console.error(`Failed to load plugin ${fullPluginInfo.name}:`, e);
-
-        const failedPlugin = {
-          ...fullPluginInfo,
-          loaded: false,
-          newFigures: [],
-          lastError: e.message || String(e),
-        };
-
-        this.plugins.push(failedPlugin);
-        this.storageManager.savePlugins(this.plugins);
         this.setLoading(false);
-        throw e;
+        console.error(`Failed to load plugin ${fullPluginInfo.name}:`, e);
+        return {
+          success: false,
+          error: e.message || String(e),
+          newNames: [],
+          method: null,
+          pluginInfo: fullPluginInfo,
+        };
       }
     } else {
+      // If not loading immediately, just add plugin info as-is
       this.plugins.push(fullPluginInfo);
       this.storageManager.savePlugins(this.plugins);
       this.notifyListeners();
-      return true;
+      return { success: true };
     }
   }
+
 
   removePlugin(pluginId) {
     if (!pluginId) return false;

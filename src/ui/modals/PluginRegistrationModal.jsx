@@ -1,5 +1,13 @@
 import React from 'react';
-import LoadingScreen from '../LoadingScreen';  // adjust path as needed
+import LoadingScreen from '../LoadingScreen'; // Adjust path as needed
+
+function formatErrorMessage(message) {
+  if (typeof message !== 'string') return '';
+  return message
+    .replace('All methods failed.', 'All methods failed.\n')
+    .replace('Last error:', '\nLast error:')
+    .trim();
+}
 
 class PluginRegistrationModal extends React.Component {
   state = {
@@ -10,8 +18,8 @@ class PluginRegistrationModal extends React.Component {
     loadMethod: 'ES',
     error: '',
     success: '',
-    loading: false,         
-    loadingTimeoutMs: 10000 
+    loading: false,
+    loadingTimeoutMs: 10000,
   };
 
   resetForm = () => {
@@ -36,7 +44,7 @@ class PluginRegistrationModal extends React.Component {
     this.setState({
       loading: false,
       error: 'Plugin loading timed out. Please try again.',
-      success: ''
+      success: '',
     });
   };
 
@@ -76,12 +84,11 @@ class PluginRegistrationModal extends React.Component {
       const result = await this.props.onRegister(pluginInfo);
 
       if (result?.success) {
-        const figureList = result.newNames?.length
-          ? result.newNames.join(', ')
-          : 'No figures registered';
-
         this.setState({
-          success: `Plugin loaded using ${result.method}. Figures registered: ${figureList}.`,
+          success: {
+            method: result.method,
+            figures: result.newNames || [],
+          },
           error: '',
           loading: false,
         });
@@ -129,7 +136,6 @@ class PluginRegistrationModal extends React.Component {
     return (
       <div style={modalOverlayStyle}>
         <div style={{ ...modalContentStyle, position: 'relative' }}>
-          {/* Show loading overlay within the modal */}
           {loading && (
             <LoadingScreen
               remainingMs={loadingTimeoutMs}
@@ -138,7 +144,7 @@ class PluginRegistrationModal extends React.Component {
               onTimeout={this.onLoadingTimeout}
             />
           )}
-          
+
           <h2>Add New Plugin</h2>
 
           <div style={{ marginBottom: '1rem' }}>
@@ -203,8 +209,30 @@ class PluginRegistrationModal extends React.Component {
             </label>
           </div>
 
-          {error && <div style={errorBoxStyle}>{error}</div>}
-          {success && <div style={successBoxStyle}>{success}</div>}
+          {error && (
+            <div style={errorBoxStyle}>
+              <div style={{ fontWeight: 600, marginBottom: '4px' }}>Plugin failed to load</div>
+              <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+                {formatErrorMessage(error)}
+              </div>
+            </div>
+          )}
+
+          {success && (
+            <div style={successBoxStyle}>
+              <div><strong>Plugin loaded using:</strong> {success.method}</div>
+              <div><strong>Figures registered:</strong></div>
+              {success.figures.length ? (
+                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                  {success.figures.map((fig, idx) => (
+                    <li key={idx} style={{ fontFamily: 'monospace' }}>{fig}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ fontStyle: 'italic', marginLeft: '16px' }}>No figures registered.</div>
+              )}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
             <button onClick={this.onClose} style={buttonStyle}>

@@ -290,10 +290,15 @@ handleLoadingTimeout = () => {
     this.figureManager.updateFigures(updatedFigures, activeTab.layout);
   };
 
-  // Plugin event handlers
   handleAddPlugin = async (pluginInfo) => {
     try {
       const result = await this.pluginService.addPlugin(pluginInfo);
+      
+      if (result.success) {
+        // Update the plugins state from the pluginService plugins list or append the new plugin
+        this.setState({ plugins: [...this.pluginService.plugins] });
+      }
+
       return result;
     } catch (error) {
       alert(`Failed to add plugin: ${error.message}`);
