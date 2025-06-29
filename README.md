@@ -1,70 +1,91 @@
-# Getting Started with Create React App
+# DQM Webpage Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![React Version](https://img.shields.io/badge/react-18.2.0-blue)](https://reactjs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E=16.0.0-green)](https://nodejs.org/)
+[![NPM Version](https://img.shields.io/badge/npm-%3E=8.0.0-orange)](https://www.npmjs.com/)
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+This is a **React-based frontend application** designed for dynamic data quality monitoring (DQM) visualization. It supports flexible plugin loading, interactive figures, tabbed layouts, and a customizable dashboard interface.
 
-### `npm start`
+The frontend interacts with backend services (such as FastAPI-based APIs and ZeroMQ streams) to fetch and display live data plots, tables, and figures.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Features
 
-### `npm test`
+* **Dynamic Plugin System**: Load, register, and manage visualization plugins at runtime.
+* **Figure Management**: Supports multiple figure types including plots and tables with customizable settings.
+* **Dashboard with Tabs**: Organize figures into multiple tabs with drag-resize capabilities.
+* **Persistent Layout**: Save and restore dashboard layouts and plugin configurations via local storage.
+* **Settings Menu**: Adjust global and figure-specific settings interactively.
+* **Loading and Error Handling**: Visual feedback for plugin loading and data fetching statuses.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## Project Structure
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+frontend/
+├── public/                 # Static files, HTML, icons, manifest
+├── src/
+│   ├── App.jsx             # Main React application entry
+│   ├── index.js            # React DOM render bootstrap
+│   ├── index.css           # Global styles
+│   ├── figures/            # Figure components (plots, tables, static)
+│   ├── managers/           # Managers for plugins, figures, tabs, storage
+│   ├── plugin/             # Plugin loading and info management
+│   ├── registries/         # Registries for figure types and factories
+│   ├── services/           # Services such as PluginManagementService
+│   ├── ui/                 # UI components including modals and dashboard
+│   ├── enums/              # Enumerations (e.g., SettingTypes)
+│   ├── factories/          # Factories to create figure components
+│   └── resources/          # Default JSON configs for layout and plugins
+├── package.json            # NPM dependencies and scripts
+├── package-lock.json       # Exact dependency versions
+└── README.md               # This file
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Installation & Running
 
-### `npm run eject`
+```bash
+# Clone repo
+git clone https://github.com/jaca230/DQM_webpage.git
+cd DQM_webpage/frontend
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Install dependencies
+npm install
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Start development server
+npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+This will launch the React app locally, typically accessible at [http://localhost:3000](http://localhost:3000).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## Usage Notes
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+* **Plugin Management:** Use the plugin management modal to load, unload, import, export, and reset visualization plugins.
+* **Dashboard Layout:** Drag and resize figures; layouts are saved automatically and restored on reload.
+* **Backend API:** This frontend expects a backend API (e.g., [FastAPI with ZeroMQ receiver](https://github.com/jaca230/ZMQSUB_to_FastAPI)) to provide live data endpoints.
+* **Local Storage:** User settings and plugin lists are persisted in local storage.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Dependencies
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+* React 18+
+* React DOM
+* Various UI helper libraries (see package.json for full list)
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## License
 
-### Making a Progressive Web App
+MIT License — see [LICENSE](LICENSE) file for details.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
