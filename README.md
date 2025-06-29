@@ -9,7 +9,7 @@
 
 This is a **React-based frontend application** designed for dynamic data quality monitoring (DQM) visualization. It supports flexible plugin loading, interactive figures, tabbed layouts, and a customizable dashboard interface.
 
-The frontend interacts with backend services (such as FastAPI-based APIs and ZeroMQ streams) to fetch and display live data plots, tables, and figures.
+The frontend interacts with backend services (such as FastAPI-based APIs) to fetch and display live data plots, tables, and figures.
 
 ---
 
