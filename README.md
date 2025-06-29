@@ -368,9 +368,20 @@ export default function makeMyCustomPlot({ Plot, SettingTypes }) {
 
     // Update plot with new data periodically
     updatePlot(json) {
-      // Use same format as initPlot or update only data if layout unchanged
-      return this.initPlot(json);
-    }
+        // Update only the data, keep layout unchanged
+        return {
+        data: [
+            {
+            x: json.time || [],
+            y: json.value || [],
+            type: 'scatter',
+            mode: 'lines+markers',
+            marker: { color: 'green' },
+            },
+        ],
+        layout: undefined,
+        };
+  }
   };
 }
 ```
