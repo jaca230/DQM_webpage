@@ -7,6 +7,20 @@
     "loaded": false,
     "loadOnStartup": true,
     "loadMethod": "ES",
-    "metadata": {}
+    "metadata": {},
+    "newFigures": [],
+    "lastError": null
+  },
+  {
+    "id": "plugin_1751168354068_5w9u2mdoc",
+    "name": "Midas Figures",
+    "url": "https://cdn.jsdelivr.net/gh/jaca230/DQM_webpage_midas_figures_plugin@1.0.3/dist/midas-plugin.es.js",
+    "description": "Figures based on midas \"meta data\" (WIP)",
+    "loaded": false,
+    "loadOnStartup": true,
+    "loadMethod": "ES",
+    "metadata": {},
+    "newFigures": [],
+    "lastError": null
   }
 ]
