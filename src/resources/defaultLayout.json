@@ -70,42 +70,48 @@
           "x": 0,
           "y": 0,
           "width": 400,
-          "height": 427
+          "height": 427,
+          "rotation": 0
         },
         {
           "id": "figure_9wkgt66ly",
           "x": 400,
           "y": 0,
           "width": 400,
-          "height": 300
+          "height": 300,
+          "rotation": 0
         },
         {
           "id": "figure_zop16slkx",
           "x": 400,
           "y": 294,
           "width": 400,
-          "height": 300
+          "height": 300,
+          "rotation": 0
         },
         {
           "id": "figure_ojmirykr4",
           "x": 800,
           "y": 0,
           "width": 400,
-          "height": 300
+          "height": 300,
+          "rotation": 0
         },
         {
           "id": "figure_4juvqkyc0",
           "x": 801,
           "y": 304,
           "width": 400,
-          "height": 300
+          "height": 300,
+          "rotation": 0
         },
         {
           "id": "figure_qpmm7zfou",
           "x": 3,
           "y": 427,
           "width": 394,
-          "height": 707
+          "height": 707,
+          "rotation": 0
         }
       ]
     }

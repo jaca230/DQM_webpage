@@ -1,7 +1,6 @@
+// FigureGrid.jsx
 import React from 'react';
 import FigureTile from './FigureTile';
-import { Rnd } from 'react-rnd';
-import 'react-resizable/css/styles.css';
 
 class FigureGrid extends React.Component {
   constructor(props) {
@@ -23,7 +22,6 @@ class FigureGrid extends React.Component {
     window.addEventListener('resize', this.updateContainerSize);
     this.updateContainerSize();
 
-    // Initialize zIndices for all figures
     const initialZ = {};
     (this.props.figures || []).forEach((fig, idx) => {
       initialZ[fig.id] = idx + 1;
@@ -36,31 +34,25 @@ class FigureGrid extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    // Handle new figures added after mount
     if (prevProps.figures !== this.props.figures) {
       const newZIndices = { ...this.state.zIndices };
       let maxZ = this.state.maxZ;
-
       this.props.figures.forEach((fig) => {
         if (!(fig.id in newZIndices)) {
           maxZ++;
           newZIndices[fig.id] = maxZ;
         }
       });
-
       if (maxZ !== this.state.maxZ) {
         this.setState({ zIndices: newZIndices, maxZ });
       }
     }
 
-    // Update layout state if layout prop changes
     if (prevProps.layout !== this.props.layout) {
       this.setState({ layout: this.props.layout });
     }
 
-    // Handle sidebar collapse state changes
     if (prevProps.sidebarCollapsed !== this.props.sidebarCollapsed) {
-      // Add a small delay to let the sidebar animation complete
       setTimeout(this.updateContainerSize, 300);
     }
   }
@@ -68,22 +60,7 @@ class FigureGrid extends React.Component {
   updateContainerSize = () => {
     if (this.containerRef.current) {
       const { clientWidth, clientHeight } = this.containerRef.current;
-      this.setState(
-        {
-          containerWidth: clientWidth,
-          containerHeight: clientHeight,
-        },
-        () => {
-          // Force recalculation of canvas size after container update
-          const canvas = this.containerRef.current.firstChild;
-          if (canvas) {
-            const { width, height } = this.calculateRequiredCanvasSize();
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
-            canvas.style.transition = 'none';
-          }
-        }
-      );
+      this.setState({ containerWidth: clientWidth, containerHeight: clientHeight });
     }
   };
 
@@ -114,6 +91,17 @@ class FigureGrid extends React.Component {
     this.props.onFiguresChange?.(updatedFigures);
   };
 
+  updateFigureRotation = (id, rotation) => {
+    this.setState((prev) => {
+      const newLayout = prev.layout.map((item) =>
+        item.id === id ? { ...item, rotation } : item
+      );
+      this.props.onLayoutChange?.(newLayout);
+      return { layout: newLayout };
+    });
+    this.bringToFront(id);
+  };
+
   onDragStop = (id, d) => {
     this.updateLayoutItem(id, { x: d.x, y: d.y });
     this.bringToFront(id);
@@ -127,20 +115,12 @@ class FigureGrid extends React.Component {
   };
 
   calculateRequiredCanvasSize() {
-    const { layout, zoom } = this.state;
-    const { containerWidth, containerHeight } = this.state;
-
+    const { layout, zoom, containerWidth, containerHeight } = this.state;
     if (layout.length === 0) {
-      return {
-        width: containerWidth,
-        height: containerHeight,
-      };
+      return { width: containerWidth, height: containerHeight };
     }
 
-    // Calculate the maximum extent of all figures
-    let maxX = 0;
-    let maxY = 0;
-
+    let maxX = 0, maxY = 0;
     layout.forEach((item) => {
       const right = item.x + item.width;
       const bottom = item.y + item.height;
@@ -148,20 +128,16 @@ class FigureGrid extends React.Component {
       if (bottom > maxY) maxY = bottom;
     });
 
-    // Add some padding (20% of average figure size or 200px, whichever is smaller)
     const avgWidth = layout.reduce((sum, item) => sum + item.width, 0) / layout.length;
     const avgHeight = layout.reduce((sum, item) => sum + item.height, 0) / layout.length;
     const padding = Math.min(avgWidth * 0.2, avgHeight * 0.2, 200);
 
-    // Calculate required size based on figures
     const figuresWidth = maxX + padding;
     const figuresHeight = maxY + padding;
 
-    // Calculate required size based on zoom
     const zoomWidth = containerWidth / zoom;
     const zoomHeight = containerHeight / zoom;
 
-    // Use whichever is larger
     return {
       width: Math.max(figuresWidth, zoomWidth),
       height: Math.max(figuresHeight, zoomHeight),
@@ -170,7 +146,7 @@ class FigureGrid extends React.Component {
 
   render() {
     const { figures, onDeleteFigure, onTitleChange, figureFactory } = this.props;
-    const { zoom, zIndices } = this.state;
+    const { zIndices } = this.state;
     const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
 
     return (
@@ -193,7 +169,7 @@ class FigureGrid extends React.Component {
             height: canvasHeight,
             background: 'white',
             transformOrigin: 'top left',
-            transform: `scale(${zoom})`,
+            transform: `scale(${this.state.zoom})`,
             transition: 'width 0.3s, height 0.3s',
           }}
         >
@@ -203,64 +179,42 @@ class FigureGrid extends React.Component {
 
             const FigureComponent = figureFactory.registry.get(fig.type);
             const zIndex = zIndices[fig.id] || 1;
-
-            // Get settingSchema from the figure class, default to empty object
             const schema = FigureComponent?.settingSchema || {};
 
             return (
-              <Rnd
+              <FigureTile
                 key={fig.id}
-                size={{ width: layoutItem.width, height: layoutItem.height }}
-                position={{ x: layoutItem.x, y: layoutItem.y }}
-                onDragStop={(e, d) => this.onDragStop(fig.id, d)}
-                onResizeStop={(e, direction, ref, delta, position) =>
-                  this.onResizeStop(fig.id, ref, position)
-                }
-                bounds="parent"
-                dragHandleClassName="drag-handle"
-                enableResizing={{
-                  top: true,
-                  right: true,
-                  bottom: true,
-                  left: true,
-                  topRight: true,
-                  bottomRight: true,
-                  bottomLeft: true,
-                  topLeft: true,
-                }}
-                style={{
-                  border: '1px solid #aaa',
-                  background: 'white',
-                  borderRadius: 6,
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                  zIndex,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
+                id={fig.id}
+                x={layoutItem.x}
+                y={layoutItem.y}
+                width={layoutItem.width}
+                height={layoutItem.height}
+                zIndex={zIndex}
+                rotation={layoutItem.rotation || 0}
+                title={fig.title}
+                settings={fig.settings}
+                schema={schema}
+                onDelete={() => onDeleteFigure(fig.id)}
+                onTitleChange={(newTitle) => onTitleChange(fig.id, newTitle)}
+                onSettingsChange={(newSettings) => this.updateFigureSettings(fig.id, newSettings)}
+                onRotationChange={(rotation) => this.updateFigureRotation(fig.id, rotation)}
+                onDragStop={(d) => this.onDragStop(fig.id, d)}
+                onResizeStop={(ref, position) => this.onResizeStop(fig.id, ref, position)}
               >
-                <FigureTile
-                  title={fig.title}
-                  settings={fig.settings}
-                  schema={schema} // <-- pass schema here
-                  onDelete={() => onDeleteFigure(fig.id)}
-                  onTitleChange={(newTitle) => onTitleChange(fig.id, newTitle)}
-                  onSettingsChange={(newSettings) => this.updateFigureSettings(fig.id, newSettings)}
-                >
-                  {FigureComponent ? (
-                    <FigureComponent
-                      key={fig.id}
-                      id={fig.id}
-                      title={fig.title}
-                      settings={fig.settings}
-                      onSettingsCorrected={(correctedSettings) =>
-                        this.updateFigureSettings(fig.id, correctedSettings)
-                      }
-                    />
-                  ) : (
-                    <div>Unknown figure type: {fig.type}</div>
-                  )}
-                </FigureTile>
-              </Rnd>
+                {FigureComponent ? (
+                  <FigureComponent
+                    key={fig.id}
+                    id={fig.id}
+                    title={fig.title}
+                    settings={fig.settings}
+                    onSettingsCorrected={(correctedSettings) =>
+                      this.updateFigureSettings(fig.id, correctedSettings)
+                    }
+                  />
+                ) : (
+                  <div>Unknown figure type: {fig.type}</div>
+                )}
+              </FigureTile>
             );
           })}
         </div>
