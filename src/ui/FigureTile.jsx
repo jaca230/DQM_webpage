@@ -1,183 +1,140 @@
+// FigureTile.jsx
 import React from 'react';
-import { Rnd } from 'react-rnd';
-import FigureTitle from './FigureTitle';
-import { Move, Settings } from 'lucide-react';
-import SettingsMenu from './SettingsMenu';
+import { Group, Rect, Text, Transformer } from 'react-konva';
 
 export default class FigureTile extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      showMenu: false,
-      tempSettings: null,
-    };
+  shapeRef = React.createRef();
+  transformerRef = React.createRef();
+
+  componentDidMount() {
+    this.updateTransformer();
   }
 
   componentDidUpdate(prevProps) {
-    if (
-      this.state.showMenu &&
-      prevProps.settings !== this.props.settings
-    ) {
-      this.setState({ tempSettings: { ...this.props.settings } });
+    if (this.props.isSelected !== prevProps.isSelected) {
+      this.updateTransformer();
     }
   }
 
-  toggleMenu = (e) => {
-    e.stopPropagation();
-    this.setState((prev) => {
-      if (!prev.showMenu) {
-        return { showMenu: true, tempSettings: { ...this.props.settings } };
+  updateTransformer = () => {
+    if (this.transformerRef.current && this.shapeRef.current) {
+      if (this.props.isSelected) {
+        this.transformerRef.current.nodes([this.shapeRef.current]);
       } else {
-        return { showMenu: false, tempSettings: null };
+        this.transformerRef.current.nodes([]);
       }
-    });
-  };
-
-  handleDelete = (e) => {
-    e.stopPropagation();
-    this.props.onDelete();
-  };
-
-  handleSettingChange = (key, value) => {
-    this.setState((prev) => ({
-      tempSettings: { ...prev.tempSettings, [key]: value },
-    }));
-  };
-
-  applySettings = () => {
-    if (this.state.tempSettings) {
-      this.props.onSettingsChange(this.state.tempSettings);
+      this.transformerRef.current.getLayer()?.batchDraw();
     }
-    this.setState({ showMenu: false, tempSettings: null });
   };
 
-  onTitleChange = (newTitle) => {
-    this.props.onTitleChange(newTitle);
+  handleDragEnd = (e) => {
+    const { x, y } = e.target.position();
+    this.props.onPositionChange && this.props.onPositionChange({ x, y });
   };
 
-  onDragStop = (e, d) => {
-    this.props.onDragStop(d);
-  };
+  handleTransformEnd = () => {
+    const node = this.shapeRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
 
-  onResizeStop = (e, direction, ref, delta, position) => {
-    this.props.onResizeStop(ref, position);
+    node.scaleX(1);
+    node.scaleY(1);
+
+    const newWidth = Math.max(40, node.width() * scaleX);
+    const newHeight = Math.max(40, node.height() * scaleY);
+    const rotation = node.rotation();
+    const { x, y } = node.position();
+
+    this.props.onTransform &&
+      this.props.onTransform({
+        width: newWidth,
+        height: newHeight,
+        rotation,
+        x,
+        y,
+      });
   };
 
   render() {
-    const { title, children, schema = {}, x, y, width, height, zIndex } = this.props;
-    const { showMenu, tempSettings } = this.state;
+    const {
+      x = 50,
+      y = 50,
+      width = 200,
+      height = 150,
+      rotation = 0,
+      title = 'Tile',
+      fill = '#ffffff',
+      stroke = '#aaaaaa',
+      strokeWidth = 2,
+      cornerRadius = 8,
+      isSelected = false,
+      onSelect,
+    } = this.props;
 
     return (
-      <Rnd
-        size={{ width, height }}
-        position={{ x, y }}
-        onDragStop={this.onDragStop}
-        onResizeStop={this.onResizeStop}
-        bounds="parent"
-        dragHandleClassName="drag-handle"
-        enableResizing={{
-          top: true,
-          right: true,
-          bottom: true,
-          left: true,
-          topRight: true,
-          bottomRight: true,
-          bottomLeft: true,
-          topLeft: true,
-        }}
-        style={{
-          border: '1px solid #aaa',
-          background: 'white',
-          borderRadius: 6,
-          boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-          zIndex,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: '8px',
-            padding: '0.5rem',
-            background: '#fff',
-            height: '100%',
-            boxSizing: 'border-box',
-            userSelect: 'none',
-            cursor: 'default',
+      <>
+        <Group
+          ref={this.shapeRef}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          rotation={rotation}
+          draggable
+          onDragEnd={this.handleDragEnd}
+          onTransformEnd={this.handleTransformEnd}
+          onClick={(e) => {
+            e.cancelBubble = true; // Prevent Stage click deselect
+            onSelect && onSelect();
           }}
         >
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '0.5rem',
-              overflow: 'hidden',
+          <Rect
+            width={width}
+            height={height}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            cornerRadius={cornerRadius}
+            shadowBlur={4}
+            shadowOpacity={0.2}
+          />
+          <Text
+            text={title}
+            fontSize={16}
+            fontStyle="bold"
+            x={8}
+            y={8}
+            width={width - 16}
+            height={24}
+            fill="#222222"
+            ellipsis
+          />
+        </Group>
+
+        {isSelected && (
+          <Transformer
+            ref={this.transformerRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              // Minimum size enforcement
+              if (newBox.width < 40 || newBox.height < 40) {
+                return oldBox;
+              }
+              return newBox;
             }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                flexGrow: 1,
-                flexShrink: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                className="no-drag"
-                onClick={this.toggleMenu}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-                title="Options"
-                aria-label="Toggle settings menu"
-              >
-                <Settings size={16} strokeWidth={2} />
-              </button>
-
-              <FigureTitle title={title} onChange={this.onTitleChange} />
-            </div>
-
-            <div
-              className="drag-handle"
-              style={{
-                cursor: 'grab',
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: '0.5rem',
-                flexShrink: 0,
-              }}
-              title="Drag tile"
-            >
-              <Move size={16} strokeWidth={2} />
-            </div>
-          </div>
-
-          {/* Settings menu */}
-          {showMenu && tempSettings && (
-            <SettingsMenu
-              settings={tempSettings}
-              schema={schema}
-              onChange={this.handleSettingChange}
-              onApply={this.applySettings}
-              onDelete={this.handleDelete}
-            />
-          )}
-
-          {/* Content */}
-          <div style={{ flexGrow: 1, overflow: 'hidden', height: 'calc(100% - 2.5rem)' }}>
-            {children}
-          </div>
-        </div>
-      </Rnd>
+            rotateEnabled={true}
+            enabledAnchors={[
+              'top-left',
+              'top-right',
+              'bottom-left',
+              'bottom-right',
+              'top-center',
+              'bottom-center',
+              'middle-left',
+              'middle-right',
+            ]}
+          />
+        )}
+      </>
     );
   }
 }
