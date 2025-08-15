@@ -241,10 +241,11 @@ class FigureGrid extends React.Component {
                 <FigureTile
                   title={fig.title}
                   settings={fig.settings}
-                  schema={schema} // <-- pass schema here
+                  schema={schema}
                   onDelete={() => onDeleteFigure(fig.id)}
                   onTitleChange={(newTitle) => onTitleChange(fig.id, newTitle)}
                   onSettingsChange={(newSettings) => this.updateFigureSettings(fig.id, newSettings)}
+                  onBringToFront={() => this.bringToFront(fig.id)}
                 >
                   {FigureComponent ? (
                     <FigureComponent

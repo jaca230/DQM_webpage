@@ -23,6 +23,8 @@ export default class FigureTile extends React.Component {
 
   toggleMenu = (e) => {
     e.stopPropagation();
+    // Bring figure to front before toggling menu
+    this.props.onBringToFront?.();
     this.setState((prev) => {
       if (!prev.showMenu) {
         return { showMenu: true, tempSettings: { ...this.props.settings } };

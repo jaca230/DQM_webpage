@@ -1,8 +1,7 @@
-import React from 'react';
-import StaticFigure from './StaticFigure';
+import BaseFigure from './BaseFigure';
 import SettingTypes from '../enums/SettingTypes';
 
-export default class Figure extends StaticFigure {
+export default class Figure extends BaseFigure {
   static displayName = 'Figure';
   static name = 'Figure';
   static get settingSchema() {

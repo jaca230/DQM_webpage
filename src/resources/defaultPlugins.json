@@ -1,26 +1,3 @@
 [
-  {
-    "id": "plugin_1751151890759_98s79g1fn",
-    "name": "Nalu Figures (module)",
-    "url": "https://cdn.jsdelivr.net/gh/jaca230/DQM_webpage_nalu_plots_plugin@v1.0.0/dist/nalu-plugin.es.js",
-    "description": "HDSoC Related Figures",
-    "loaded": false,
-    "loadOnStartup": true,
-    "loadMethod": "ES",
-    "metadata": {},
-    "newFigures": [],
-    "lastError": null
-  },
-  {
-    "id": "plugin_1751168354068_5w9u2mdoc",
-    "name": "Midas Figures",
-    "url": "https://cdn.jsdelivr.net/gh/jaca230/DQM_webpage_midas_figures_plugin@1.0.3/dist/midas-plugin.es.js",
-    "description": "Figures based on midas \"meta data\" (WIP)",
-    "loaded": false,
-    "loadOnStartup": true,
-    "loadMethod": "ES",
-    "metadata": {},
-    "newFigures": [],
-    "lastError": null
-  }
+
 ]

@@ -9,173 +9,131 @@ class Sidebar extends React.Component {
   state = {
     selectedFigureType: '',
     collapsed: false,
+    width: 220,
+    resizing: false,
+    lastX: 0,
 
-    // Modal visibility states
+    // Modal visibility
     showPluginRegistrationModal: false,
     showPluginManagementModal: false,
     showLayoutManagementModal: false,
   };
 
-  // Figure type selection handlers
-  onFigureTypeChange = (e) => {
-    this.setState({ selectedFigureType: e.target.value });
-  };
+  // Figure type selection
+  onFigureTypeChange = (option) =>
+    this.setState({ selectedFigureType: option?.value || '' });
 
   onAddSelectedFigure = () => {
-    if (this.state.selectedFigureType) {
-      this.props.onAddFigure(this.state.selectedFigureType);
-      this.setState({ selectedFigureType: '' });
+    const { selectedFigureType } = this.state;
+    if (selectedFigureType) {
+      this.props.onAddFigure(selectedFigureType);
+      // Keep selection to allow adding multiple copies
     }
   };
 
-  // Sidebar collapse toggle
-  toggleCollapse = () => {
-    this.setState(
-      (state) => ({ collapsed: !state.collapsed }),
-      () => {
-        this.props.onCollapse?.(this.state.collapsed);
-      }
-    );
-  };
+  // Collapse toggle
+  toggleCollapse = () => this.setState((s) => ({ collapsed: !s.collapsed }));
 
-  // Plugin registration modal controls
-  openPluginRegistrationModal = () => {
-    this.setState({ showPluginRegistrationModal: true });
-  };
+  // Plugin modal controls
+  openPluginRegistrationModal = () => this.setState({ showPluginRegistrationModal: true });
+  closePluginRegistrationModal = () => this.setState({ showPluginRegistrationModal: false });
+  openPluginManagementModal = () => this.setState({ showPluginManagementModal: true });
+  closePluginManagementModal = () => this.setState({ showPluginManagementModal: false });
+  openLayoutManagementModal = () => this.setState({ showLayoutManagementModal: true });
+  closeLayoutManagementModal = () => this.setState({ showLayoutManagementModal: false });
 
-  closePluginRegistrationModal = () => {
-    this.setState({ showPluginRegistrationModal: false });
-  };
+  // Plugin and layout callbacks
+  onRegisterPlugin = (pluginInfo) => this.props.onAddPlugin?.(pluginInfo);
+  onRemovePlugin = (pluginId) => this.props.onRemovePlugin?.(pluginId);
 
-  // Plugin management modal controls
-  openPluginManagementModal = () => {
-    this.setState({ showPluginManagementModal: true });
-  };
-
-  closePluginManagementModal = () => {
-    this.setState({ showPluginManagementModal: false });
-  };
-
-  // Layout management modal controls
-  openLayoutManagementModal = () => {
-    this.setState({ showLayoutManagementModal: true });
-  };
-
-  closeLayoutManagementModal = () => {
-    this.setState({ showLayoutManagementModal: false });
-  };
-
-  // Callback when new plugin registered in modal
-  onRegisterPlugin = (pluginInfo) => {
-    return this.props.onAddPlugin?.(pluginInfo); // Let modal handle success UI and closing
-  };
-
-  // Callback when plugin removed from management modal
-  onRemovePlugin = (pluginId) => {
-    this.props.onRemovePlugin?.(pluginId);
-  };
-
-  // Callback for plugin management operations
   onManagePlugins = (operation, data) => {
     switch (operation) {
-      case 'remove':
-        this.props.onRemovePlugin?.(data.pluginId);
-        break;
-      case 'export':
-        this.props.onExportPlugins?.();
-        break;
-      case 'import':
-        this.props.onImportPlugins?.(data.jsonString);
-        break;
-      case 'clear':
-        this.props.onClearPlugins?.();
-        break;
-      case 'reset':
-        this.props.onResetPlugins?.();
-        break;
-      case 'load':
-        this.props.onLoadPlugin?.(data.pluginId);
-        break;
-      default:
-        console.warn('Unknown plugin management operation:', operation);
+      case 'remove': return this.props.onRemovePlugin?.(data.pluginId);
+      case 'export': return this.props.onExportPlugins?.();
+      case 'import': return this.props.onImportPlugins?.(data.jsonString);
+      case 'clear': return this.props.onClearPlugins?.();
+      case 'reset': return this.props.onResetPlugins?.();
+      case 'load': return this.props.onLoadPlugin?.(data.pluginId);
+      default: console.warn('Unknown plugin management operation:', operation);
     }
   };
 
-  // Callback for layout management operations
   onManageLayout = (operation, data) => {
     switch (operation) {
-      case 'exportLayout':
-        this.props.onExportLayout?.();
-        break;
-      case 'importLayout':
-        this.props.onImportLayout?.(data.jsonString);
-        break;
-      case 'clearLayout':
-        this.props.onClearLayout?.();
-        break;
-      case 'resetLayout':
-        this.props.onResetLayout?.();
-        break;
-      case 'exportTab':
-        this.props.onExportTab?.();
-        break;
-      case 'importTab':
-        this.props.onImportTab?.(data.jsonString);
-        break;
-      default:
-        console.warn('Unknown layout management operation:', operation);
+      case 'exportLayout': return this.props.onExportLayout?.();
+      case 'importLayout': return this.props.onImportLayout?.(data.jsonString);
+      case 'clearLayout': return this.props.onClearLayout?.();
+      case 'resetLayout': return this.props.onResetLayout?.();
+      case 'exportTab': return this.props.onExportTab?.();
+      case 'importTab': return this.props.onImportTab?.(data.jsonString);
+      default: console.warn('Unknown layout management operation:', operation);
     }
+  };
+
+  // Drag to resize
+  onMouseDown = (e) => {
+    this.setState({ resizing: true, lastX: e.clientX });
+    document.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mouseup', this.onMouseUp);
+  };
+
+  onMouseMove = (e) => {
+    if (!this.state.resizing) return;
+    const delta = e.clientX - this.state.lastX;
+    this.setState((s) => ({
+      width: Math.max(48, s.width + delta),
+      lastX: e.clientX,
+    }));
+  };
+
+  onMouseUp = () => {
+    this.setState({ resizing: false });
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseUp);
   };
 
   render() {
-    const {
-      figureTypes,
-      plugins = [],
-      tabs = [],
-      activeTabId,
-    } = this.props;
-
+    const { figureTypes, plugins = [], tabs = [], activeTabId, activeFigureId } = this.props;
     const {
       selectedFigureType,
       collapsed,
+      width,
       showPluginRegistrationModal,
       showPluginManagementModal,
       showLayoutManagementModal,
     } = this.state;
 
-    // Prepare display names and handle duplicates
-    const displayNames = figureTypes.map(
-      ([name, cls]) => cls.displayName || cls.name || name || 'UnnamedFigure'
-    );
+    const options = figureTypes.map(([name, cls]) => ({
+      value: name,
+      label: cls.displayName || cls.name || name || 'UnnamedFigure',
+    }));
 
+    const displayNames = options.map((opt) => opt.label);
     const counts = {};
-    displayNames.forEach((name) => {
-      counts[name] = (counts[name] || 0) + 1;
-    });
-
-    if (Object.values(counts).some((count) => count > 1)) {
+    displayNames.forEach((name) => (counts[name] = (counts[name] || 0) + 1));
+    if (Object.values(counts).some((c) => c > 1)) {
       console.warn(
-        'Duplicate figure type display names detected:',
-        Object.entries(counts)
-          .filter(([, count]) => count > 1)
-          .map(([name]) => name)
+        'Duplicate figure type display names:',
+        Object.entries(counts).filter(([, c]) => c > 1).map(([name]) => name)
       );
     }
 
     return (
       <div
         style={{
-          width: collapsed ? 48 : 220,
+          width: collapsed ? 48 : width,
+          minWidth: 48,
           padding: collapsed ? '0.5rem 0' : '1rem',
           borderRight: '1px solid #ccc',
           backgroundColor: '#f8f8f8',
           height: '100vh',
           overflowY: 'auto',
           boxSizing: 'border-box',
-          transition: 'width 0.3s, padding 0.3s',
           display: 'flex',
           flexDirection: 'column',
           alignItems: collapsed ? 'center' : 'stretch',
+          transition: 'width 0.2s, padding 0.2s',
+          position: 'relative',
         }}
       >
         {/* Header */}
@@ -188,43 +146,29 @@ class Sidebar extends React.Component {
             paddingBottom: collapsed ? 0 : '0.5rem',
             borderBottom: collapsed ? 'none' : '1px solid #ddd',
             width: '100%',
-            userSelect: 'none',
           }}
         >
-          {!collapsed && (
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '1.2rem' }}>
-              Sidebar
-            </h3>
-          )}
+          {!collapsed && <h3 style={{ margin: 0 }}>Sidebar</h3>}
           <button
             onClick={this.toggleCollapse}
             style={{
-              backgroundColor: 'transparent',
+              background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              padding: '0.25rem',
-              borderRadius: 4,
+              padding: 4,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background-color 0.2s',
-              width: 32,
-              height: 32,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = 'transparent')
-            }
             aria-label="Toggle sidebar collapse"
           >
             {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
           </button>
         </div>
 
-        {/* Main content - hidden if collapsed */}
+        {/* Main content */}
         {!collapsed && (
           <>
-            {/* Available Figures */}
             <div style={{ marginBottom: '1rem' }}>
               <h3>Available Figures</h3>
               <Select
@@ -238,59 +182,67 @@ class Sidebar extends React.Component {
                       }
                     : null
                 }
-                onChange={(option) =>
-                  this.setState({ selectedFigureType: option?.value || '' })
-                }
-                options={figureTypes.map(([name, cls]) => ({
-                  value: name,
-                  label: cls.displayName || cls.name || name || 'UnnamedFigure',
-                }))}
+                onChange={this.onFigureTypeChange}
+                options={options}
                 placeholder="Select Figure.."
                 isClearable
+                styles={{
+                  option: (base, { data }) => ({
+                    ...base,
+                    backgroundColor:
+                      activeFigureId === data.value ? '#d0ebff' : base.backgroundColor,
+                    fontWeight: activeFigureId === data.value ? 'bold' : base.fontWeight,
+                  }),
+                }}
               />
               <button
                 onClick={this.onAddSelectedFigure}
                 disabled={!selectedFigureType}
-                style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem' }}
+                style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
               >
                 Add Figure
               </button>
             </div>
 
-            {/* Layout Management */}
             <div style={{ marginBottom: '1rem' }}>
               <h3>Layout</h3>
               <button
                 onClick={this.openLayoutManagementModal}
-                style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem' }}
-                aria-label="Manage layout"
+                style={{ width: '100%', padding: '0.5rem' }}
               >
                 Manage Layout
               </button>
             </div>
 
-            {/* Plugin Management Buttons */}
             <h3>Plugins</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <button
-                onClick={this.openPluginRegistrationModal}
-                style={{ padding: '0.5rem' }}
-                aria-label="Register new plugin"
-              >
+              <button onClick={this.openPluginRegistrationModal} style={{ padding: '0.5rem' }}>
                 Add Plugin
               </button>
-              <button
-                onClick={this.openPluginManagementModal}
-                style={{ padding: '0.5rem' }}
-                aria-label="Manage existing plugins"
-              >
+              <button onClick={this.openPluginManagementModal} style={{ padding: '0.5rem' }}>
                 Manage Plugins
               </button>
             </div>
           </>
         )}
 
-        {/* Plugin modals */}
+        {/* Resize handle */}
+        {!collapsed && (
+          <div
+            onMouseDown={this.onMouseDown}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 5,
+              height: '100%',
+              cursor: 'ew-resize',
+              zIndex: 10,
+            }}
+          />
+        )}
+
+        {/* Modals */}
         <PluginRegistrationModal
           visible={showPluginRegistrationModal}
           onRegister={this.onRegisterPlugin}
@@ -302,8 +254,6 @@ class Sidebar extends React.Component {
           onManage={this.onManagePlugins}
           onClose={this.closePluginManagementModal}
         />
-        
-        {/* Layout management modal */}
         <LayoutManagementModal
           visible={showLayoutManagementModal}
           tabs={tabs}

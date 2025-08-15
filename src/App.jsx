@@ -1,6 +1,8 @@
 // src/App.jsx
 import React from 'react';
 import ReactDOM from 'react-dom';
+import Plotly from 'react-plotly.js';
+
 import Dashboard from './ui/Dashboard';
 import initRegistries from './registries/init-registries';
 import initFactories from './factories/init-factories';
@@ -10,11 +12,12 @@ import PluginLoader from './plugin/PluginLoader';
 import Plot from './figures/plots/Plot';
 import SettingTypes from './enums/SettingTypes';
 import Figure from './figures/Figure';
-import StaticFigure from './figures/StaticFigure';
+import BaseFigure from './figures/BaseFigure';
 import Table from './figures/tables/Table';
 
 window.React = React; // makes it globally available for plugin eval
 window.ReactDOM = ReactDOM; //  makes it globally available for plugin eval
+window.Plotly = Plotly; // make Plotly globally available for plugins
 
 class App extends React.Component {
   constructor(props) {
@@ -39,7 +42,7 @@ class App extends React.Component {
         Plot: Plot,
         SettingTypes: SettingTypes,
         Figure: Figure,
-        StaticFigure: StaticFigure,
+        BaseFigure: BaseFigure,
         Table: Table,
       }
     });
