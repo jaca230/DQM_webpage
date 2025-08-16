@@ -12,8 +12,6 @@ class FigureGrid extends React.Component {
       containerWidth: window.innerWidth,
       containerHeight: window.innerHeight,
       layout: props.layout || [],
-      zIndices: {},
-      maxZ: 1,
     };
 
     this.containerRef = React.createRef();
@@ -23,12 +21,8 @@ class FigureGrid extends React.Component {
     window.addEventListener('resize', this.updateContainerSize);
     this.updateContainerSize();
 
-    // Initialize zIndices for all figures
-    const initialZ = {};
-    (this.props.figures || []).forEach((fig, idx) => {
-      initialZ[fig.id] = idx + 1;
-    });
-    this.setState({ zIndices: initialZ, maxZ: (this.props.figures || []).length });
+    // Initialize z-indices for any layout items that don't have them
+    this.ensureZIndicesExist();
   }
 
   componentWillUnmount() {
@@ -37,20 +31,8 @@ class FigureGrid extends React.Component {
 
   componentDidUpdate(prevProps) {
     // Handle new figures added after mount
-    if (prevProps.figures !== this.props.figures) {
-      const newZIndices = { ...this.state.zIndices };
-      let maxZ = this.state.maxZ;
-
-      this.props.figures.forEach((fig) => {
-        if (!(fig.id in newZIndices)) {
-          maxZ++;
-          newZIndices[fig.id] = maxZ;
-        }
-      });
-
-      if (maxZ !== this.state.maxZ) {
-        this.setState({ zIndices: newZIndices, maxZ });
-      }
+    if (prevProps.figures !== this.props.figures || prevProps.layout !== this.props.layout) {
+      this.ensureZIndicesExist();
     }
 
     // Update layout state if layout prop changes
@@ -64,6 +46,29 @@ class FigureGrid extends React.Component {
       setTimeout(this.updateContainerSize, 300);
     }
   }
+
+  /**
+   * Ensure all layout items have z-index values
+   */
+  ensureZIndicesExist = () => {
+    const { layout } = this.props;
+    let needsUpdate = false;
+    let maxZ = Math.max(...layout.map(item => item.zIndex || 0), 0);
+
+    const updatedLayout = layout.map((item) => {
+      if (typeof item.zIndex !== 'number') {
+        needsUpdate = true;
+        maxZ++;
+        return { ...item, zIndex: maxZ };
+      }
+      return item;
+    });
+
+    if (needsUpdate) {
+      this.setState({ layout: updatedLayout });
+      this.props.onLayoutChange?.(updatedLayout);
+    }
+  };
 
   updateContainerSize = () => {
     if (this.containerRef.current) {
@@ -87,13 +92,19 @@ class FigureGrid extends React.Component {
     }
   };
 
+  /**
+   * Bring a figure to front by setting its z-index to max + 1
+   */
   bringToFront = (id) => {
     this.setState((prev) => {
-      const newMaxZ = prev.maxZ + 1;
-      return {
-        zIndices: { ...prev.zIndices, [id]: newMaxZ },
-        maxZ: newMaxZ,
-      };
+      const maxZ = Math.max(...prev.layout.map(item => item.zIndex || 0), 0);
+      
+      const newLayout = prev.layout.map((item) =>
+        item.id === id ? { ...item, zIndex: maxZ + 1 } : item
+      );
+      
+      this.props.onLayoutChange?.(newLayout);
+      return { layout: newLayout };
     });
   };
 
@@ -170,7 +181,7 @@ class FigureGrid extends React.Component {
 
   render() {
     const { figures, onDeleteFigure, onTitleChange, figureFactory } = this.props;
-    const { zoom, zIndices } = this.state;
+    const { zoom } = this.state;
     const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
 
     return (
@@ -202,7 +213,7 @@ class FigureGrid extends React.Component {
             if (!layoutItem) return null;
 
             const FigureComponent = figureFactory.registry.get(fig.type);
-            const zIndex = zIndices[fig.id] || 1;
+            const zIndex = layoutItem.zIndex || 1;
 
             // Get settingSchema from the figure class, default to empty object
             const schema = FigureComponent?.settingSchema || {};
