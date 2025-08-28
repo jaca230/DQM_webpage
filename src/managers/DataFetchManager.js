@@ -520,7 +520,7 @@ export default class DataFetchManager {
    * @private
    */
   _notifyMultiSubscriber(subscriberId, listener, updatedUrl, now) {
-    const { updateFrequency, sources, callback, lastUpdates } = listener;
+    const { updateFrequency, lastUpdates } = listener;
     
     // In sync mode, check if enough time has passed since last update for this URL
     // In async mode, always proceed (timing handled by fetch intervals)
