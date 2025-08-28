@@ -6,6 +6,7 @@ import LoadingScreen from './LoadingScreen';
 import TabManager from '../managers/TabManager';
 import FigureManager from '../managers/FigureManager';
 import StorageManager from '../managers/StorageManager';
+import DataFetchManager from '../managers/DataFetchManager';
 import PluginManagementService from '../services/PluginManagementService';
 import defaultLayout from '../resources/defaultLayout.json';
 import defaultPlugins from '../resources/defaultPlugins.json';
@@ -27,6 +28,7 @@ export default class Dashboard extends React.Component {
     this.tabManager = new TabManager();
     this.figureManager = new FigureManager(this.factoryManager);
     this.pluginService = new PluginManagementService(this.pluginLoader, this.storageManager);
+    this.dataFetchManager = new DataFetchManager();
 
     // Component state
     this.state = {
@@ -41,6 +43,9 @@ export default class Dashboard extends React.Component {
 
       // UI state
       sidebarCollapsed: false,
+
+      //Sync state
+      syncMode: true,
     };
 
     // Bind event handlers
@@ -95,6 +100,13 @@ export default class Dashboard extends React.Component {
       const layoutData = this.tabManager.toJSON();
       this.storageManager.saveLayout(layoutData);
     }
+  };
+
+  // Add this handler method
+  handleSyncModeChange = (syncMode) => {
+    this.setState({ syncMode });
+    const mode = syncMode ? 'sync' : 'async';
+    this.dataFetchManager.setMode(mode);
   };
 
 /**
@@ -207,6 +219,8 @@ handleLoadingTimeout = () => {
       clearInterval(this.loadingTimerId);
       this.loadingTimerId = null;
     }
+
+    this.dataFetchManager.destroy();
   }
 
   // Tab event handlers
@@ -437,7 +451,7 @@ handleLoadingTimeout = () => {
 
   // Update the render method to pass additional props to Sidebar:
   render() {
-    const { loadingPlugins, loadingRemainingMs, tabs, activeTabId, sidebarCollapsed, plugins } = this.state;
+    const { loadingPlugins, loadingRemainingMs, tabs, activeTabId, sidebarCollapsed, plugins, syncMode } = this.state;
 
     // Only show full-page loading screen on initial load
     if (loadingPlugins) {
@@ -486,6 +500,9 @@ handleLoadingTimeout = () => {
             tabs={tabs}
             activeTabId={activeTabId}
             onCollapse={this.handleSidebarCollapse}
+            syncMode={syncMode}
+            onSyncModeChange={this.handleSyncModeChange}
+            dataManager={this.dataFetchManager}
           />
           <FigureGrid
             figures={activeTab?.figures || []}
@@ -496,6 +513,7 @@ handleLoadingTimeout = () => {
             onFiguresChange={this.handleFiguresChange}
             figureFactory={figureFactory}
             sidebarCollapsed={sidebarCollapsed}
+            dataManager={this.dataFetchManager}
           />
         </div>
       </div>

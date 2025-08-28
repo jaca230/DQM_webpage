@@ -8,53 +8,57 @@ export default class Plot extends Figure {
   constructor(props) {
     super(props);
     this.state = {
+      ...this.state, // Include loading/error state from Figure
       data: [],
       layout: {},
       revision: 0,
-      loading: true,
-      error: null,
     };
   }
 
-  async onInit() {
+  onDataReceived(data) {
     try {
-      const json = await this.fetchJson();
-      const { data, layout } = this.initPlot(json);
-      this.setState({
-        data,
-        layout,
-        loading: false,
-        error: null,
-        revision: 0,
-      });
-    } catch (err) {
-      this.setState({ error: err.message, loading: false });
-    }
-  }
-
-  async onUpdateTick() {
-    try {
-      const json = await this.fetchJson();
-      const { data, layout } = this.updatePlot(json);
+      // Determine if this is initial load or update
+      const isInitialLoad = this.state.data.length === 0;
+      
+      let plotData, plotLayout;
+      
+      if (isInitialLoad) {
+        // First time receiving data - use initPlot
+        const result = this.initPlot(data);
+        plotData = result.data;
+        plotLayout = result.layout;
+      } else {
+        // Subsequent updates - use updatePlot
+        const result = this.updatePlot(data);
+        plotData = result.data;
+        // Layout updates are optional in updates
+        plotLayout = result.layout || this.state.layout;
+      }
+      
       this.setState(prev => ({
-        data,
-        layout: layout || prev.layout, // optional layout updates
-        error: null,
+        data: plotData,
+        layout: plotLayout,
         revision: prev.revision + 1,
       }));
     } catch (err) {
-      this.setState({ error: err.message });
+      console.error('Error processing plot data:', err);
+      this.setState({ 
+        error: `Data processing error: ${err.message}`,
+      });
     }
   }
 
-  // Utility to fetch JSON data from settings-defined URL
-  async fetchJson() {
-    const res = await fetch(this.getDataUrl());
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return await res.json();
+  onDataError(error) {
+    super.onDataError(error);
+    // Reset plot data on error
+    this.setState({
+      data: [],
+      layout: {},
+      revision: 0,
+    });
   }
 
-  // Default impls for subclasses to override
+  // Default implementations for subclasses to override
   initPlot(json) {
     return this.formatPlotly(json);
   }
@@ -68,8 +72,8 @@ export default class Plot extends Figure {
     return {
       data: [
         {
-          x: json.time || [],
-          y: json.value || [],
+          x: json.time || json.x || [],
+          y: json.value || json.y || [],
           type: 'scatter',
           mode: 'lines+markers',
           marker: { color: 'gray' },
@@ -78,32 +82,72 @@ export default class Plot extends Figure {
       layout: {
         autosize: true,
         margin: { t: 30, r: 20, l: 40, b: 40 },
-        xaxis: { title: 'X' },
-        yaxis: { title: 'Y' },
+        xaxis: { title: json.xlabel || 'X' },
+        yaxis: { title: json.ylabel || 'Y' },
       },
     };
   }
 
   render() {
-    const { data, layout, revision, loading, error } = this.state;
+    const { loading, error } = this.state;
+    
+    // Show loading/error states from parent Figure class
+    if (loading) {
+      return (
+        <div style={{ 
+          width: '100%', 
+          height: '100%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center' 
+        }}>
+          <p>Loading plot data...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{ 
+          width: '100%', 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          justifyContent: 'center',
+          padding: '20px',
+          color: 'red'
+        }}>
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => this.refreshData()} 
+            style={{ 
+              marginTop: '10px',
+              padding: '5px 10px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    const { data, layout, revision } = this.state;
 
     return (
       <div className="no-drag" style={{ width: '100%', height: '100%' }}>
-        {loading && <p>Loading...</p>}
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-        {!loading && !error && (
-          <Plotly
-            data={data}
-            layout={layout}
-            revision={revision}
-            style={{ width: '100%', height: '100%' }}
-            useResizeHandler
-            config={{ 
-              responsive: true,
-              modeBarButtonsToRemove: ['select2d', 'lasso2d']
-             }}
-          />
-        )}
+        <Plotly
+          data={data}
+          layout={layout}
+          revision={revision}
+          style={{ width: '100%', height: '100%' }}
+          useResizeHandler
+          config={{ 
+            responsive: true,
+            modeBarButtonsToRemove: ['select2d', 'lasso2d']
+          }}
+        />
       </div>
     );
   }

@@ -34,6 +34,12 @@ class Sidebar extends React.Component {
   // Collapse toggle
   toggleCollapse = () => this.setState((s) => ({ collapsed: !s.collapsed }));
 
+  // Sync mode toggle
+  handleSyncModeToggle = () => {
+    const newSyncMode = !this.props.syncMode;
+    this.props.onSyncModeChange?.(newSyncMode);
+  };
+
   // Plugin modal controls
   openPluginRegistrationModal = () => this.setState({ showPluginRegistrationModal: true });
   closePluginRegistrationModal = () => this.setState({ showPluginRegistrationModal: false });
@@ -93,7 +99,14 @@ class Sidebar extends React.Component {
   };
 
   render() {
-    const { figureTypes, plugins = [], tabs = [], activeTabId, activeFigureId } = this.props;
+    const { 
+      figureTypes, 
+      plugins = [], 
+      tabs = [], 
+      activeTabId, 
+      activeFigureId,
+      syncMode = true
+    } = this.props;
     const {
       selectedFigureType,
       collapsed,
@@ -222,6 +235,33 @@ class Sidebar extends React.Component {
               <button onClick={this.openPluginManagementModal} style={{ padding: '0.5rem' }}>
                 Manage Plugins
               </button>
+            </div>
+
+            {/* Data Sync Mode Toggle */}
+            <div style={{ marginBottom: '1rem' }}>
+              <h3>Data Sync</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.9rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={syncMode}
+                    onChange={this.handleSyncModeToggle}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  Sync Mode
+                </label>
+              </div>
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#666', 
+                marginTop: '0.25rem',
+                lineHeight: '1.3'
+              }}>
+                {syncMode 
+                  ? 'Figures wait for their interval but share fastest fetch rate'
+                  : 'Each figure fetches independently (more requests)'
+                }
+              </div>
             </div>
           </>
         )}

@@ -264,6 +264,7 @@ class FigureGrid extends React.Component {
                       id={fig.id}
                       title={fig.title}
                       settings={fig.settings}
+                      dataManager={this.props.dataManager}
                       onSettingsCorrected={(correctedSettings) =>
                         this.updateFigureSettings(fig.id, correctedSettings)
                       }
