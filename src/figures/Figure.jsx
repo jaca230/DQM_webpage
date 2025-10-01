@@ -1,9 +1,13 @@
 import BaseFigure from './BaseFigure';
 import SettingTypes from '../enums/SettingTypes';
+import NoFetchStrategy from './strategies/NoFetchStrategy';
+import SingleSourceStrategy from './strategies/SingleSourceStrategy';
+import MultiSourceStrategy from './strategies/MultiSourceStrategy';
 
 export default class Figure extends BaseFigure {
   static displayName = 'Figure';
   static name = 'Figure';
+
   static get settingSchema() {
     return {
       ...super.settingSchema,
@@ -25,11 +29,15 @@ export default class Figure extends BaseFigure {
 
   constructor(props) {
     super(props);
+    // Kept for backward compatibility; strategies now own their own IDs
     this.subscriptionId = null;
+
     this.state = {
       loading: true,
       error: null,
     };
+
+    this.strategy = null;
   }
 
   /**
@@ -77,143 +85,136 @@ export default class Figure extends BaseFigure {
   }
 
   /**
+   * Determine the fetch mode based on current configuration
+   * Priority: settings.dataUrl === 'None' takes precedence over method overrides
+   * @returns {'none'|'single'|'multi'}
+   * @private
+   */
+  _getFetchMode() {
+    // Check settings first - user can force 'None' mode via settings
+    if (this.settings.dataUrl === 'None') {
+      return 'none';
+    }
+    
+    // Then check method override
+    if (this.getDataUrl() === 'None') {
+      return 'none';
+    }
+    
+    const urls = this.getDataUrls();
+    return urls === null ? 'single' : 'multi';
+  }
+
+  /**
+   * Get the configuration for the current fetch mode
+   * @returns {Object} { mode, urls, frequency }
+   * @private
+   */
+  _getFetchConfig() {
+    const mode = this._getFetchMode();
+    const frequency = this.getUpdateFrequency();
+    
+    if (mode === 'none') {
+      return { mode, urls: [], frequency };
+    } else if (mode === 'single') {
+      return { mode, urls: [this.getDataUrl()], frequency };
+    } else {
+      return { mode, urls: this.getDataUrls(), frequency };
+    }
+  }
+
+  /**
    * Determine if resubscription is needed based on setting changes
    * @private
    */
   _needsResubscription(prevProps) {
-    const urls = this.getDataUrls();
-    const prevUrls = this._getPrevDataUrls(prevProps);
-    const frequency = this.getUpdateFrequency();
-    const prevFrequency = prevProps.settings?.updateFrequency || 2;
+    const currentConfig = this._getFetchConfig();
+    const prevConfig = this._withPreviousSettings(prevProps, () => this._getFetchConfig());
+
+    // Check if mode changed
+    if (currentConfig.mode !== prevConfig.mode) {
+      return true;
+    }
 
     // Check if frequency changed
-    if (frequency !== prevFrequency) {
+    if (currentConfig.frequency !== prevConfig.frequency) {
       return true;
     }
 
-    if (urls === null && prevUrls === null) {
-      // Single-source mode
-      return this.getDataUrl() !== (prevProps.settings?.dataUrl || this.constructor.settingSchema.dataUrl?.default);
-    }
-
-    if (urls === null || prevUrls === null) {
-      // Mode changed between single and multi
-      return true;
-    }
-
-    // Multi-source mode - check if URLs changed
-    return JSON.stringify(urls.sort()) !== JSON.stringify(prevUrls.sort());
+    // Check if URLs changed (sorted comparison for multi-source)
+    const currentUrls = currentConfig.urls.slice().sort();
+    const prevUrls = prevConfig.urls.slice().sort();
+    
+    return JSON.stringify(currentUrls) !== JSON.stringify(prevUrls);
   }
 
   /**
-   * Get previous data URLs for comparison
+   * Helper to evaluate a method with previous props' settings
+   * This allows us to call overridden methods (like getDataUrl/getDataUrls) 
+   * as they would have behaved with the previous settings
    * @private
    */
-  _getPrevDataUrls(prevProps) {
-    // This is a bit tricky since we need to call getDataUrls() with previous settings
-    // We'll temporarily swap settings and call getDataUrls()
+  _withPreviousSettings(prevProps, callback) {
     const currentSettings = this.settings;
     this.settings = prevProps.settings || {};
-    const prevUrls = this.getDataUrls();
-    this.settings = currentSettings;
-    return prevUrls;
+    try {
+      return callback();
+    } finally {
+      this.settings = currentSettings;
+    }
   }
 
+
+
+  /**
+   * Choose and activate a fetch strategy based on current fetch mode.
+   * - mode 'none' => NoFetchStrategy (local timer via onLocalTick)
+   * - mode 'single' => SingleSourceStrategy
+   * - mode 'multi' => MultiSourceStrategy
+   */
   subscribeToDataManager() {
     const dataManager = this.getDataManager();
-    if (!dataManager) {
-      console.error('DataFetchManager not available');
-      this.setState({ error: 'Data manager not available', loading: false });
-      return;
+    const { mode, urls } = this._getFetchConfig();
+
+    // Decide strategy based on mode
+    if (mode === 'none') {
+      this.strategy = new NoFetchStrategy(this);
+    } else if (mode === 'single') {
+      if (!dataManager) {
+        console.error('DataFetchManager not available');
+        this.setState({ error: 'Data manager not available', loading: false });
+        return;
+      }
+      this.strategy = new SingleSourceStrategy(this, dataManager);
+    } else if (mode === 'multi') {
+      if (!dataManager) {
+        console.error('DataFetchManager not available');
+        this.setState({ error: 'Data manager not available', loading: false });
+        return;
+      }
+      this.strategy = new MultiSourceStrategy(this, dataManager, urls);
     }
 
-    const urls = this.getDataUrls();
-    const frequency = this.getUpdateFrequency();
-
-    if (urls === null) {
-      // Single-source mode
-      const url = this.getDataUrl();
-      this.subscriptionId = dataManager.subscribe(
-        url,
-        frequency,
-        (data, error) => {
-          if (error) {
-            this.setState({ error, loading: false });
-            this.onDataError(error);
-          } else {
-            this.setState({ error: null, loading: false });
-            this.onDataReceived(data);
-          }
-        }
-      );
-
-      // Check for immediate cached data
-      const cached = dataManager.getCachedData(url);
-      if (cached && cached.data !== null) {
-        this.setState({ loading: false });
-        this.onDataReceived(cached.data);
-      } else if (cached && cached.error !== null) {
-        this.setState({ loading: false, error: cached.error });
-        this.onDataError(cached.error);
-      }
-    } else {
-      // Multi-source mode
-      this.subscriptionId = dataManager.subscribeMultiple(
-        urls,
-        frequency,
-        (dataMap, errorMap) => {
-          if (errorMap) {
-            const errorMessages = Object.entries(errorMap).map(([url, error]) => `${url}: ${error}`);
-            const combinedError = errorMessages.join('; ');
-            this.setState({ error: combinedError, loading: false });
-            this.onMultiDataError(errorMap);
-          } else {
-            this.setState({ error: null, loading: false });
-            this.onMultiDataReceived(dataMap);
-          }
-        }
-      );
-
-      // Check for immediate cached data
-      const allCached = {};
-      let hasAllData = true;
-      let hasAnyErrors = false;
-      const errorMap = {};
-
-      for (const url of urls) {
-        const cached = dataManager.getCachedData(url);
-        if (cached) {
-          if (cached.data !== null) {
-            allCached[url] = cached.data;
-          }
-          if (cached.error !== null) {
-            errorMap[url] = cached.error;
-            hasAnyErrors = true;
-          }
-        } else {
-          hasAllData = false;
-        }
-      }
-
-      if (hasAllData) {
-        this.setState({ loading: false });
-        if (hasAnyErrors) {
-          this.onMultiDataError(errorMap);
-        } else {
-          this.onMultiDataReceived(allCached);
-        }
-      }
+    // Activate strategy
+    try {
+      this.strategy.subscribe();
+    } catch (err) {
+      console.error('Strategy subscribe error:', err);
+      this.setState({ error: String(err?.message || err), loading: false });
     }
   }
 
   unsubscribeFromDataManager() {
-    if (this.subscriptionId) {
-      const dataManager = this.getDataManager();
-      if (dataManager) {
-        dataManager.unsubscribe(this.subscriptionId);
+    if (this.strategy) {
+      try {
+        this.strategy.unsubscribe();
+      } catch (err) {
+        console.error('Strategy unsubscribe error:', err);
       }
-      this.subscriptionId = null;
+      this.strategy = null;
     }
+    // Keep legacy field cleanup no-op; strategy owns sub IDs now
+    this.subscriptionId = null;
   }
 
   getDataManager() {
@@ -229,7 +230,6 @@ export default class Figure extends BaseFigure {
     console.debug(`Data error in ${this.constructor.name}:`, error);
   }
 
-  // Multi-source hooks (new)
   onMultiDataReceived(dataMap) {
     // Default implementation - subclasses should override
     // For backward compatibility, if there's only one URL, call single-source hook
@@ -247,6 +247,9 @@ export default class Figure extends BaseFigure {
 
   // Helper methods for forcing refresh
   refreshData() {
+    // No-op in NoFetchStrategy
+    if (this.getDataUrl() === 'None') return;
+
     const dataManager = this.getDataManager();
     if (!dataManager) return;
 

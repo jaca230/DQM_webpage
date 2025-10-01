@@ -15,26 +15,37 @@ export default class Plot extends Figure {
     };
   }
 
+  // Called when backend data arrives (single-source)
   onDataReceived(data) {
+    this._updatePlotInternal(data);
+  }
+
+  // Called when backend data arrives (multi-source)
+  onMultiDataReceived(dataMap) {
+    this._updatePlotInternal(dataMap);
+  }
+
+  // Called when in "None" mode (NoFetchStrategy)
+  onLocalTick() {
+    this._updatePlotInternal(null); // no backend data
+  }
+
+  _updatePlotInternal(data) {
     try {
-      // Determine if this is initial load or update
       const isInitialLoad = this.state.data.length === 0;
-      
+
       let plotData, plotLayout;
-      
+
       if (isInitialLoad) {
-        // First time receiving data - use initPlot
         const result = this.initPlot(data);
         plotData = result.data;
         plotLayout = result.layout;
       } else {
-        // Subsequent updates - use updatePlot
         const result = this.updatePlot(data);
         plotData = result.data;
-        // Layout updates are optional in updates
         plotLayout = result.layout || this.state.layout;
       }
-      
+
       this.setState(prev => ({
         data: plotData,
         layout: plotLayout,
@@ -42,7 +53,7 @@ export default class Plot extends Figure {
       }));
     } catch (err) {
       console.error('Error processing plot data:', err);
-      this.setState({ 
+      this.setState({
         error: `Data processing error: ${err.message}`,
       });
     }
@@ -50,8 +61,19 @@ export default class Plot extends Figure {
 
   onDataError(error) {
     super.onDataError(error);
-    // Reset plot data on error
     this.setState({
+      data: [],
+      layout: {},
+      revision: 0,
+    });
+  }
+
+  onMultiDataError(errorMap) {
+    super.onMultiDataError(errorMap);
+    // Show first error in the UI
+    const firstError = Object.values(errorMap)[0];
+    this.setState({
+      error: firstError,
       data: [],
       layout: {},
       revision: 0,
@@ -67,8 +89,7 @@ export default class Plot extends Figure {
     return this.formatPlotly(json);
   }
 
-  // Shared formatting method for default plot structure
-  formatPlotly(json) {
+  formatPlotly(json = {}) {
     return {
       data: [
         {
@@ -90,16 +111,15 @@ export default class Plot extends Figure {
 
   render() {
     const { loading, error } = this.state;
-    
-    // Show loading/error states from parent Figure class
+
     if (loading) {
       return (
-        <div style={{ 
-          width: '100%', 
-          height: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center' 
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           <p>Loading plot data...</p>
         </div>
@@ -108,20 +128,20 @@ export default class Plot extends Figure {
 
     if (error) {
       return (
-        <div style={{ 
-          width: '100%', 
-          height: '100%', 
-          display: 'flex', 
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', 
+          alignItems: 'center',
           justifyContent: 'center',
           padding: '20px',
           color: 'red'
         }}>
           <p>Error: {error}</p>
-          <button 
-            onClick={() => this.refreshData()} 
-            style={{ 
+          <button
+            onClick={() => this.refreshData()}
+            style={{
               marginTop: '10px',
               padding: '5px 10px',
               cursor: 'pointer'
@@ -143,7 +163,7 @@ export default class Plot extends Figure {
           revision={revision}
           style={{ width: '100%', height: '100%' }}
           useResizeHandler
-          config={{ 
+          config={{
             responsive: true,
             modeBarButtonsToRemove: ['select2d', 'lasso2d']
           }}
