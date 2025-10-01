@@ -1,14 +1,3 @@
-Got it. Right now your README is trying to be a **manual + wiki + tutorial** all in one, which creates duplication. Since you already built a detailed wiki, the README should just:
-
-* identify the project,
-* give a short overview + screenshot (if you have one),
-* provide minimal install/run instructions,
-* link out to the wiki for details.
-
-Here’s a shortened version:
-
----
-
 # DQM Webpage Frontend
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -68,5 +57,3 @@ See the [Wiki](https://github.com/jaca230/DQM_webpage/wiki)
 MIT License — see [LICENSE](LICENSE).
 
 ---
-
-Do you want me to also include a **preview screenshot/GIF** of the dashboard in the README (like the ones you already have in the wiki), or keep it purely text-only?
