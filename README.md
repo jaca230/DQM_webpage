@@ -35,6 +35,10 @@ The default layout (loaded from `src/resources/defaultLayout.json`) now pre-popu
 
 Because all demo figures use the `NoFetchStrategy`, the page stays completely static-friendly (ideal for GitHub Pages). You can still add your own figures or load plugins locally if you start the dev server.
 
+### Publishing to GitHub Pages
+
+Run `npm run demo-build` to emit the production bundle into a top-level `docs/` directory (the CRA build also uses a `homepage` of `.` so assets resolve properly from either the repo root or the `/docs` folder). Point GitHub Pages at `/docs` on this branch and it will serve the static demo without any extra tooling.
+
 ---
 
 ## Features
