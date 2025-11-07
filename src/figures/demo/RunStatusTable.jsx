@@ -2,7 +2,6 @@ import React from 'react';
 import Table from '../tables/Table';
 import SettingTypes from '../../enums/SettingTypes';
 
-const RUN_STATES = ['Stable', 'Tuning', 'Calibrating', 'Investigate'];
 const SYSTEMS = [
   'Cryogenics',
   'RF Cavities',
@@ -20,9 +19,15 @@ export default class RunStatusTable extends Table {
 
   constructor(props) {
     super(props);
+    this.systemStats = SYSTEMS.map((system, idx) => ({
+      system,
+      load: 55 + idx * 3 + Math.random() * 10,
+      drift: 0,
+      status: 'Stable',
+    }));
     this.state = {
       ...this.state,
-      rows: this.buildRows(),
+      rows: this.snapshotRows(),
     };
   }
 
@@ -55,29 +60,40 @@ export default class RunStatusTable extends Table {
   }
 
   onLocalTick() {
-    this.setState({ rows: this.buildRows() });
+    this.updateSystemStats();
+    this.setState({ rows: this.snapshotRows() });
   }
 
-  buildRows() {
+  updateSystemStats() {
+    this.systemStats = this.systemStats.map((stat) => {
+      const drift = (Math.random() - 0.5) * 2.5;
+      const load = Math.max(40, Math.min(110, stat.load + drift));
+
+      let status = 'Investigate';
+      if (load >= 90) status = 'Stable';
+      else if (load >= 80) status = 'Tuning';
+      else if (load >= 70) status = 'Calibrating';
+
+      return {
+        ...stat,
+        load,
+        drift,
+        status,
+      };
+    });
+  }
+
+  snapshotRows() {
     const rowCount = Math.min(
       Math.max(3, this.settings.maxRows || 6),
       SYSTEMS.length
     );
-    const shuffled = [...SYSTEMS].sort(() => Math.random() - 0.5);
-
-    return shuffled.slice(0, rowCount).map((system) => {
-      const load = 40 + Math.random() * 60;
-      const drift = (Math.random() - 0.5) * 4;
-      const stateIndex = load > 80 ? 0 : load > 70 ? 1 : load > 60 ? 2 : 3;
-      const status = RUN_STATES[Math.min(RUN_STATES.length - 1, stateIndex)];
-
-      return {
-        system,
-        status,
-        load: load.toFixed(1),
-        drift: drift.toFixed(1),
-      };
-    });
+    return this.systemStats.slice(0, rowCount).map((stat) => ({
+      system: stat.system,
+      status: stat.status,
+      load: stat.load.toFixed(1),
+      drift: stat.drift.toFixed(1),
+    }));
   }
 
   renderChip(status) {
@@ -117,26 +133,26 @@ export default class RunStatusTable extends Table {
           style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '0.9rem',
+            fontSize: '1rem',
           }}
         >
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '0.35rem' }}>Subsystem</th>
-              <th style={{ padding: '0.35rem' }}>Status</th>
-              <th style={{ padding: '0.35rem' }}>Load (%)</th>
-              <th style={{ padding: '0.35rem' }}>Drift (±%)</th>
+              <th style={{ padding: '0.45rem' }}>Subsystem</th>
+              <th style={{ padding: '0.45rem' }}>Status</th>
+              <th style={{ padding: '0.45rem' }}>Load (%)</th>
+              <th style={{ padding: '0.45rem' }}>Drift (±%)</th>
             </tr>
           </thead>
           <tbody>
             {rows?.map((row) => (
               <tr key={row.system} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.35rem', fontWeight: 600 }}>{row.system}</td>
-                <td style={{ padding: '0.35rem' }}>{this.renderChip(row.status)}</td>
-                <td style={{ padding: '0.35rem' }}>{row.load}</td>
+                <td style={{ padding: '0.45rem', fontWeight: 600 }}>{row.system}</td>
+                <td style={{ padding: '0.45rem' }}>{this.renderChip(row.status)}</td>
+                <td style={{ padding: '0.45rem' }}>{row.load}</td>
                 <td
                   style={{
-                    padding: '0.35rem',
+                    padding: '0.45rem',
                     color: parseFloat(row.drift) >= 0 ? '#166534' : '#b91c1c',
                     fontWeight: 600,
                   }}

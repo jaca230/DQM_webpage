@@ -21,17 +21,17 @@ You're currently on the **GitHub Pages demo branch**. This build ships with a cu
 
 * `BeamIntensityPlot` – layered pulse traces representing accelerator RF structure.
 * `EventRateGauge` – Plotly indicator displaying a drifting collision rate vs. targets.
-* `DetectorHeatmapPlot` – animated calorimeter heatmap with a moving hotspot.
-* `ParticleTracePlot` – GL scatter trace of faux particle hits swirling through a detector.
+* `ChannelRateBars` – animated bar chart showing per-channel data throughput.
 * `RunStatusTable` – subsystem dashboard with color-coded status chips.
-* `DetectorAnimation` – purely visual beamline/array animation rendered with CSS pulses.
+* `OscilloscopeTracePlot` – multi-channel waveform traces with pulses, ringing, and noise.
+* `EnergySpectrumHistogram` – continually growing histogram of simulated energy deposition.
+* `BeamProfileHistogram` – 2-D contour histogram that represents the transverse beam footprint.
 * `Label` widgets – editable instructions and story beats for each tab.
 
-The default layout (loaded from `src/resources/defaultLayout.json`) now pre-populates three tabs:
+The default layout (loaded from `src/resources/defaultLayout.json`) now pre-populates two tabs:
 
-1. **Beam Control Room** – beam pulse traces, rate gauge, and subsystem table.
-2. **Detector Array** – calorimeter heatmap, particle traces, and the animated detector view.
-3. **Outreach Gallery** – a flashy mix designed for science fair kiosks.
+1. **Beamline Overview** – operator notes, beam pulse traces, collision-rate gauge, channel bars, and subsystem table.
+2. **Detector Readout** – oscilloscope traces, energy spectrum, and a transverse beam profile reminder.
 
 Because all demo figures use the `NoFetchStrategy`, the page stays completely static-friendly (ideal for GitHub Pages). You can still add your own figures or load plugins locally if you start the dev server.
 

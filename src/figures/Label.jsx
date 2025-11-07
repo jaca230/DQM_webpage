@@ -69,21 +69,21 @@ export default class Label extends BaseFigure {
     super(props);
     this.state = {
       isEditing: false,
-      editText: this.settings.text,
+      editText: this.normalizeText(this.settings.text),
     };
     this.textareaRef = React.createRef();
   }
 
   // Update editText when settings change (important for external settings updates)
   componentDidMount() {
-    this.setState({ editText: this.settings.text });
+    this.setState({ editText: this.normalizeText(this.settings.text) });
   }
 
   // Callback methods for settings changes
   onTextUpdate = () => {
     // Update editText state when text setting changes externally
     if (!this.state.isEditing) {
-      this.setState({ editText: this.settings.text });
+      this.setState({ editText: this.normalizeText(this.settings.text) });
     }
     this.forceUpdate(); // Trigger re-render
   };
@@ -96,7 +96,7 @@ export default class Label extends BaseFigure {
   handleClick = () => {
     this.setState({ 
       isEditing: true, 
-      editText: this.settings.text 
+      editText: this.normalizeText(this.settings.text) 
     }, () => {
       // Focus and select all text after the textarea is rendered
       if (this.textareaRef.current) {
@@ -119,7 +119,7 @@ export default class Label extends BaseFigure {
       // Escape cancels editing
       this.setState({ 
         isEditing: false, 
-        editText: this.settings.text 
+        editText: this.normalizeText(this.settings.text) 
       });
     }
   };
@@ -149,8 +149,8 @@ componentDidUpdate(prevProps, prevState) {
   super.componentDidUpdate(prevProps);
 
   // Sync text if changed externally
-  if (prevProps.settings?.text !== this.props.settings?.text && !this.state.isEditing) {
-    this.setState({ editText: this.settings.text });
+    if (prevProps.settings?.text !== this.props.settings?.text && !this.state.isEditing) {
+      this.setState({ editText: this.normalizeText(this.settings.text) });
   }
 
   // If style props changed, force re-render
@@ -167,6 +167,13 @@ componentDidUpdate(prevProps, prevState) {
   }
 }
 
+  normalizeText(text = '') {
+    if (typeof text !== 'string') {
+      return '';
+    }
+    return text.replace(/\\n/g, '\n');
+  }
+
   render() {
     const {
       fontSize,
@@ -180,6 +187,7 @@ componentDidUpdate(prevProps, prevState) {
     } = this.settings;
 
     const { isEditing, editText } = this.state;
+    const displayText = this.normalizeText(this.settings.text || '');
 
     const wrapperStyle = {
       width: '100%',
@@ -241,7 +249,7 @@ componentDidUpdate(prevProps, prevState) {
         ) : (
           <div style={containerStyle} onClick={this.handleClick}>
             <div style={textStyle}>
-              {this.settings.text || 'Click to edit label...'}
+              {displayText || 'Click to edit label...'}
             </div>
           </div>
         )}
