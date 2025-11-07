@@ -168,22 +168,29 @@ componentDidUpdate(prevProps, prevState) {
 }
 
   render() {
-    const { 
-      fontSize, 
-      fontWeight, 
-      textAlign, 
-      color, 
-      backgroundColor, 
-      padding, 
-      borderRadius, 
-      border 
+    const {
+      fontSize,
+      fontWeight,
+      textAlign,
+      color,
+      backgroundColor,
+      padding,
+      borderRadius,
+      border,
     } = this.settings;
-    
+
     const { isEditing, editText } = this.state;
+
+    const wrapperStyle = {
+      width: '100%',
+      height: '100%',
+      padding: '8px',
+      boxSizing: 'border-box',
+      overflow: 'auto',
+    };
 
     const containerStyle = {
       width: '100%',
-      height: '100%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: textAlign === 'left' ? 'flex-start' : 
@@ -194,6 +201,7 @@ componentDidUpdate(prevProps, prevState) {
       border,
       cursor: isEditing ? 'text' : 'pointer',
       minHeight: '40px', // Ensure some minimum height
+      boxSizing: 'border-box',
     };
 
     const textStyle = {
@@ -206,37 +214,37 @@ componentDidUpdate(prevProps, prevState) {
       whiteSpace: 'pre-wrap', // Preserve line breaks
     };
 
-    if (isEditing) {
-      return (
-        <div style={containerStyle}>
-          <textarea
-            ref={this.textareaRef}
-            value={editText}
-            onChange={this.handleTextChange}
-            onKeyDown={this.handleKeyDown}
-            onBlur={this.handleBlur}
-            style={{
-              ...textStyle,
-              background: 'transparent',
-              border: '1px dashed #ccc',
-              outline: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-              minHeight: '1.5em',
-              borderRadius: '2px',
-              padding: '2px 4px',
-            }}
-            placeholder="Enter your text..."
-          />
-        </div>
-      );
-    }
-
     return (
-      <div style={containerStyle} onClick={this.handleClick}>
-        <div style={textStyle}>
-          {this.settings.text || 'Click to edit label...'}
-        </div>
+      <div style={wrapperStyle}>
+        {isEditing ? (
+          <div style={containerStyle}>
+            <textarea
+              ref={this.textareaRef}
+              value={editText}
+              onChange={this.handleTextChange}
+              onKeyDown={this.handleKeyDown}
+              onBlur={this.handleBlur}
+              style={{
+                ...textStyle,
+                background: 'transparent',
+                border: '1px dashed #ccc',
+                outline: 'none',
+                resize: 'none',
+                overflow: 'hidden',
+                minHeight: '1.5em',
+                borderRadius: '2px',
+                padding: '2px 4px',
+              }}
+              placeholder="Enter your text..."
+            />
+          </div>
+        ) : (
+          <div style={containerStyle} onClick={this.handleClick}>
+            <div style={textStyle}>
+              {this.settings.text || 'Click to edit label...'}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
