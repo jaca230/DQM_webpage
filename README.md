@@ -13,6 +13,26 @@ The frontend interacts with backend services (such as FastAPI-based APIs) to fet
 
 ---
 
+## `gh-pages-demo` branch
+
+You're currently on the **GitHub Pages demo branch**. This build ships with a curated dashboard layout and purely client-side demo figures so it can run without any backend.
+
+### Included demo figures
+
+* `DemoSineWavePlot` – animated twin waveforms that respond to the settings menu.
+* `DemoMetricComparisonPlot` – bar/line combo to mimic KPI tracking.
+* `DemoStatusTable` – rolling health table with inline badges.
+* `Label` widgets – serve as editable callouts/instructions.
+
+The default layout (loaded from `src/resources/defaultLayout.json`) pre-populates two tabs:
+
+1. **Interactive Playground** – showcases all demo figures so visitors can drag, resize, and tweak settings immediately.
+2. **Blank Canvas** – an empty workspace with a short note encouraging experimentation.
+
+Because all demo figures use the `NoFetchStrategy`, the page stays completely static-friendly (ideal for GitHub Pages). You can still add your own figures or load plugins locally if you start the dev server.
+
+---
+
 ## Features
 
 * **Dynamic Plugin System**: Load, register, and manage visualization plugins at runtime.

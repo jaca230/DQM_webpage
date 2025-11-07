@@ -61,7 +61,31 @@ class App extends React.Component {
 
     return (
       <div style={{ padding: '1rem' }}>
-        <h1>Data Quality Monitor</h1>
+        <h1
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            marginBottom: '0.5rem',
+          }}
+        >
+          <span>Data Quality Monitor</span>
+          <span
+            style={{
+              fontSize: '0.9rem',
+              letterSpacing: '0.1em',
+              color: '#b91c1c',
+              border: '1px solid rgba(185,28,28,0.6)',
+              borderRadius: '999px',
+              padding: '0.15rem 0.65rem',
+              fontWeight: 700,
+            }}
+          >
+            DEMO
+          </span>
+        </h1>
         <Dashboard
           registryManager={registryManager}
           factoryManager={factoryManager}
