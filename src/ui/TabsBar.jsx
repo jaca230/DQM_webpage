@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 
-export default function TabsBar({ tabs, activeTabId, onSelectTab, onAddTab, onDeleteTab, onRenameTab }) {
+export default function TabsBar({
+  tabs,
+  activeTabId,
+  onSelectTab,
+  onAddTab,
+  onDeleteTab,
+  onRenameTab,
+  onReorderTabs,
+}) {
   const [editTabId, setEditTabId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [draggedTabId, setDraggedTabId] = useState(null);
 
   useEffect(() => {
     if (editTabId) {
@@ -22,11 +31,34 @@ export default function TabsBar({ tabs, activeTabId, onSelectTab, onAddTab, onDe
     setEditName('');
   };
 
+  const handleDrop = (targetId) => {
+    if (draggedTabId && typeof onReorderTabs === 'function') {
+      onReorderTabs(draggedTabId, targetId || null);
+    }
+    setDraggedTabId(null);
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
       {tabs.map(tab => (
         <div
           key={tab.id}
+          draggable
+          onDragStart={(e) => {
+            setDraggedTabId(tab.id);
+            e.dataTransfer.effectAllowed = 'move';
+          }}
+          onDragOver={(e) => {
+            if (draggedTabId && draggedTabId !== tab.id) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleDrop(tab.id);
+          }}
+          onDragEnd={() => setDraggedTabId(null)}
           style={{
             padding: '0.3rem 0.6rem',
             marginRight: '0.3rem',
@@ -36,6 +68,7 @@ export default function TabsBar({ tabs, activeTabId, onSelectTab, onAddTab, onDe
             display: 'flex',
             alignItems: 'center',
             minWidth: '80px',
+            opacity: draggedTabId === tab.id ? 0.5 : 1,
           }}
           onClick={() => onSelectTab(tab.id)}
         >
@@ -92,9 +125,22 @@ export default function TabsBar({ tabs, activeTabId, onSelectTab, onAddTab, onDe
         </div>
       ))}
 
+      <div
+        style={{ display: 'flex', alignItems: 'center' }}
+        onDragOver={(e) => {
+          if (draggedTabId) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleDrop(null); // drop at end
+        }}
+      >
         <button
-        onClick={onAddTab}
-        style={{
+          onClick={onAddTab}
+          style={{
             padding: '0.3rem 0.6rem',
             borderRadius: '4px',
             cursor: 'pointer',
@@ -106,14 +152,15 @@ export default function TabsBar({ tabs, activeTabId, onSelectTab, onAddTab, onDe
             textAlign: 'center',
             border: '1px solid #ccc',
             transition: 'background-color 0.2s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#ddd'}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#eee'}
-        aria-label="Add new tab"
-        title="Add new tab"
+          }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#ddd'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#eee'}
+          aria-label="Add new tab"
+          title="Add new tab"
         >
-        <Plus size={16} strokeWidth={2} />
+          <Plus size={16} strokeWidth={2} />
         </button>
+      </div>
     </div>
   );
 }

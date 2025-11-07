@@ -180,7 +180,7 @@ class FigureGrid extends React.Component {
   }
 
   render() {
-    const { figures, onDeleteFigure, onTitleChange, figureFactory } = this.props;
+    const { figures, onDeleteFigure, onTitleChange, figureFactory, onDuplicateFigure } = this.props;
     const { zoom } = this.state;
     const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
 
@@ -257,6 +257,7 @@ class FigureGrid extends React.Component {
                   onTitleChange={(newTitle) => onTitleChange(fig.id, newTitle)}
                   onSettingsChange={(newSettings) => this.updateFigureSettings(fig.id, newSettings)}
                   onBringToFront={() => this.bringToFront(fig.id)}
+                  onDuplicate={() => onDuplicateFigure?.(fig.id)}
                 >
                   {FigureComponent ? (
                     <FigureComponent
