@@ -182,6 +182,44 @@ export default class TabManager {
   }
 
   /**
+   * Reorder tabs by dragging one tab before another.
+   * @param {string} sourceId - The tab being moved
+   * @param {string|null} targetId - The tab that receives the drop (or null to move to end)
+   * @returns {boolean} True if reordered
+   */
+  reorderTabs(sourceId, targetId) {
+    if (!sourceId || sourceId === targetId) {
+      return false;
+    }
+
+    const sourceIndex = this.tabs.findIndex(tab => tab.id === sourceId);
+    if (sourceIndex === -1) {
+      return false;
+    }
+
+    const [movedTab] = this.tabs.splice(sourceIndex, 1);
+
+    if (!targetId) {
+      this.tabs.push(movedTab);
+    } else {
+      let targetIndex = this.tabs.findIndex(tab => tab.id === targetId);
+      if (targetIndex === -1) {
+        // If target tab no longer exists, place moved tab back to original position
+        this.tabs.splice(sourceIndex, 0, movedTab);
+        return false;
+      }
+      // Adjust target index if source was before target
+      if (sourceIndex < targetIndex) {
+        targetIndex -= 1;
+      }
+      this.tabs.splice(targetIndex, 0, movedTab);
+    }
+
+    this.notifyListeners();
+    return true;
+  }
+
+  /**
    * Load tabs from JSON data
    * @param {Object} data - Object containing tabs and activeTabId
    */
