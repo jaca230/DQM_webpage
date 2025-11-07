@@ -202,16 +202,13 @@ export default class TabManager {
     if (!targetId) {
       this.tabs.push(movedTab);
     } else {
-      let targetIndex = this.tabs.findIndex(tab => tab.id === targetId);
+      const targetIndex = this.tabs.findIndex(tab => tab.id === targetId);
       if (targetIndex === -1) {
         // If target tab no longer exists, place moved tab back to original position
         this.tabs.splice(sourceIndex, 0, movedTab);
         return false;
       }
-      // Adjust target index if source was before target
-      if (sourceIndex < targetIndex) {
-        targetIndex -= 1;
-      }
+      // Insert before the target (targetIndex is already correct after source removal)
       this.tabs.splice(targetIndex, 0, movedTab);
     }
 
