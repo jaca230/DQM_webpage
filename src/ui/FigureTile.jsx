@@ -1,6 +1,6 @@
 import React from 'react';
 import FigureTitle from './FigureTitle';
-import { Move, Settings } from 'lucide-react';
+import { Move, Settings, Copy } from 'lucide-react';
 import SettingsMenu from './SettingsMenu';
 
 export default class FigureTile extends React.Component {
@@ -37,6 +37,11 @@ export default class FigureTile extends React.Component {
   handleDelete = (e) => {
     e.stopPropagation();
     this.props.onDelete();
+  };
+
+  handleDuplicate = (e) => {
+    e.stopPropagation();
+    this.props.onDuplicate?.();
   };
 
   handleSettingChange = (key, value) => {
@@ -89,7 +94,7 @@ export default class FigureTile extends React.Component {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.25rem',
               flexGrow: 1,
               flexShrink: 1,
               minWidth: 0,
@@ -109,6 +114,22 @@ export default class FigureTile extends React.Component {
               aria-label="Toggle settings menu"
             >
               <Settings size={16} strokeWidth={2} />
+            </button>
+
+            <button
+              className="no-drag"
+              onClick={this.handleDuplicate}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+                marginLeft: '0.1rem',
+              }}
+              title="Duplicate figure"
+              aria-label="Duplicate figure"
+            >
+              <Copy size={16} strokeWidth={2} />
             </button>
 
             <FigureTitle title={title} onChange={this.onTitleChange} />

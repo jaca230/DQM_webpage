@@ -234,6 +234,10 @@ handleLoadingTimeout = () => {
     }
   };
 
+  handleReorderTabs = (sourceId, targetId) => {
+    this.tabManager.reorderTabs(sourceId, targetId);
+  };
+
   handleRenameTab = (tabId, newName) => {
     this.tabManager.renameTab(tabId, newName);
   };
@@ -302,6 +306,24 @@ handleLoadingTimeout = () => {
     if (!activeTab) return;
 
     this.figureManager.updateFigures(updatedFigures, activeTab.layout);
+  };
+
+  handleDuplicateFigure = (figureId) => {
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) return;
+
+    const result = this.figureManager.duplicateFigure(
+      figureId,
+      activeTab.figures,
+      activeTab.layout
+    );
+
+    if (result) {
+      this.tabManager.updateActiveTab({
+        figures: result.figures,
+        layout: result.layout,
+      });
+    }
   };
 
   handleAddPlugin = async (pluginInfo) => {
@@ -478,6 +500,7 @@ handleLoadingTimeout = () => {
           onAddTab={this.handleAddTab}
           onDeleteTab={this.handleDeleteTab}
           onRenameTab={this.handleRenameTab}
+          onReorderTabs={this.handleReorderTabs}
         />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <Sidebar
@@ -514,6 +537,7 @@ handleLoadingTimeout = () => {
             figureFactory={figureFactory}
             sidebarCollapsed={sidebarCollapsed}
             dataManager={this.dataFetchManager}
+            onDuplicateFigure={this.handleDuplicateFigure}
           />
         </div>
       </div>

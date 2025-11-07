@@ -258,4 +258,54 @@ export default class FigureManager {
     const figureIds = new Set(figures.map(f => f.id));
     return layout.filter(l => figureIds.has(l.id));
   }
+
+  /**
+   * Duplicate an existing figure including its settings and layout.
+   * @param {string} figureId - ID of the figure to duplicate
+   * @param {Array} figures - Current figures array
+   * @param {Array} layout - Current layout array
+   * @returns {Object|null} Updated figures and layout arrays
+   */
+  duplicateFigure(figureId, figures, layout) {
+    const originalFigure = this.getFigureById(figureId, figures);
+    if (!originalFigure) {
+      console.warn(`FigureManager: Figure ${figureId} not found for duplication`);
+      return null;
+    }
+
+    const originalLayout = this.getLayoutItemById(figureId, layout);
+
+    const newId = `figure_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const newFigure = {
+      ...originalFigure,
+      id: newId,
+      title: `${originalFigure.title} Copy`,
+      settings: JSON.parse(JSON.stringify(originalFigure.settings || {})),
+    };
+
+    const newLayoutItem = originalLayout
+      ? {
+          ...originalLayout,
+          id: newId,
+          x: (originalLayout.x || 0) + 20,
+          y: (originalLayout.y || 0) + 20,
+        }
+      : {
+          id: newId,
+          x: 0,
+          y: 0,
+          width: 400,
+          height: 300,
+        };
+
+    const newFigures = [...figures, newFigure];
+    const newLayout = [...layout, newLayoutItem];
+
+    this.notifyListeners(newFigures, newLayout);
+
+    return {
+      figures: newFigures,
+      layout: newLayout,
+    };
+  }
 }
