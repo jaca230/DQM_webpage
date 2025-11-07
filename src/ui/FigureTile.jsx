@@ -94,7 +94,7 @@ export default class FigureTile extends React.Component {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.25rem',
               flexGrow: 1,
               flexShrink: 1,
               minWidth: 0,
@@ -124,7 +124,7 @@ export default class FigureTile extends React.Component {
                 border: 'none',
                 cursor: 'pointer',
                 flexShrink: 0,
-                marginLeft: '0.25rem',
+                marginLeft: '0.1rem',
               }}
               title="Duplicate figure"
               aria-label="Duplicate figure"
