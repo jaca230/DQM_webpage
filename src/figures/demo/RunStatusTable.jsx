@@ -3,18 +3,18 @@ import Table from '../tables/Table';
 import SettingTypes from '../../enums/SettingTypes';
 
 const SYSTEMS = [
-  'Cryogenics',
-  'RF Cavities',
-  'Vacuum Loop',
-  'Trigger Farm',
-  'DAQ Buffer',
-  'Muon Veto',
-  'Calorimeter Bias',
-  'Magnet Power',
+  'Subsystem A',
+  'Subsystem B',
+  'Subsystem C',
+  'Subsystem D',
+  'Subsystem E',
+  'Subsystem F',
+  'Subsystem G',
+  'Subsystem H',
 ];
 
 export default class RunStatusTable extends Table {
-  static displayName = 'Run • Subsystem Status';
+  static displayName = 'Subsystem Status Table';
   static name = 'RunStatusTable';
 
   constructor(props) {

@@ -4,7 +4,7 @@ import SettingTypes from '../../enums/SettingTypes';
 const CHANNELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export default class ChannelRateBars extends Plot {
-  static displayName = 'DAQ • Channel Rates';
+  static displayName = 'Channel Rate Monitor';
   static name = 'ChannelRateBars';
 
   constructor(props) {

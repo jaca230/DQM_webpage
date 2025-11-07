@@ -2,7 +2,7 @@ import Plot from '../plots/Plot';
 import SettingTypes from '../../enums/SettingTypes';
 
 export default class EventRateGauge extends Plot {
-  static displayName = 'Beam • Event Rate Gauge';
+  static displayName = 'Event Rate Gauge';
   static name = 'EventRateGauge';
 
   constructor(props) {

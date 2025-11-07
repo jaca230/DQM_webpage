@@ -2,7 +2,7 @@ import Plot from '../plots/Plot';
 import SettingTypes from '../../enums/SettingTypes';
 
 export default class BeamIntensityPlot extends Plot {
-  static displayName = 'Beam • Intensity Sweep';
+  static displayName = 'Ticker Plot';
   static name = 'BeamIntensityPlot';
 
   constructor(props) {

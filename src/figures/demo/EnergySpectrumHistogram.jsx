@@ -2,7 +2,7 @@ import Plot from '../plots/Plot';
 import SettingTypes from '../../enums/SettingTypes';
 
 export default class EnergySpectrumHistogram extends Plot {
-  static displayName = 'Detector • Energy Spectrum';
+  static displayName = 'Updating Histogram';
   static name = 'EnergySpectrumHistogram';
 
   constructor(props) {
