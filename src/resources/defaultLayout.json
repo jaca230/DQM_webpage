@@ -1,130 +1,270 @@
 {
   "tabs": [
     {
-      "id": "tab-demo-playground",
-      "name": "Interactive Playground",
+      "id": "tab-beam",
+      "name": "Beam Control Room",
       "figures": [
         {
           "type": "Label",
-          "id": "demo-headline",
-          "title": "Welcome Banner",
+          "id": "beam-brief",
+          "title": "Operator Notes",
           "settings": {
-            "text": "DATA QUALITY MONITOR DEMO\\nDrag tiles, edit titles, tweak settings — no backend required.",
-            "fontSize": 22,
+            "text": "SHIFT LOG\\n• Keep collision rate around 250 kHz\\n• Watch RF drift alarms\\n• Tap any tile to tweak settings",
+            "fontSize": 20,
             "fontWeight": "600",
             "textAlign": "left",
             "color": "rgba(15,23,42,1)",
-            "backgroundColor": "rgba(191,219,254,0.45)",
-            "padding": 16,
-            "borderRadius": 12,
+            "backgroundColor": "rgba(191,219,254,0.5)",
+            "padding": 18,
+            "borderRadius": 14,
             "border": "1px solid rgba(59,130,246,0.35)"
           }
         },
         {
-          "type": "DemoSineWavePlot",
-          "id": "demo-sine",
-          "title": "Animated Waveforms",
+          "type": "BeamIntensityPlot",
+          "id": "beam-intensity",
+          "title": "Beam Pulse Intensity",
           "settings": {
-            "amplitude": 1.4,
-            "frequency": 0.9,
-            "waveSpeed": 0.28,
-            "noise": 0.15,
-            "showMarkers": false,
-            "mirrorWave": true,
+            "amplitude": 1.25,
+            "jitter": 0.18,
+            "harmonics": 4,
             "updateFrequency": 0.4,
             "dataUrl": "None"
           }
         },
         {
-          "type": "DemoMetricComparisonPlot",
-          "id": "demo-metrics",
-          "title": "Metric Tracker",
+          "type": "EventRateGauge",
+          "id": "beam-gauge",
+          "title": "Collision Rate Monitor",
           "settings": {
-            "targetValue": 96,
-            "volatility": 1.1,
-            "highlightThreshold": 93,
-            "updateFrequency": 1,
+            "targetRate": 250,
+            "maxRate": 320,
+            "updateFrequency": 0.6,
             "dataUrl": "None"
           }
         },
         {
-          "type": "DemoStatusTable",
-          "id": "demo-status",
-          "title": "Pipeline Status",
+          "type": "RunStatusTable",
+          "id": "run-status",
+          "title": "Subsystem Readiness",
           "settings": {
-            "rowCount": 4,
-            "alertThreshold": 93,
-            "updateFrequency": 2,
+            "maxRows": 6,
+            "updateFrequency": 1.2,
             "dataUrl": "None"
           }
         }
       ],
       "layout": [
         {
-          "id": "demo-headline",
+          "id": "beam-brief",
           "x": 20,
           "y": 20,
-          "width": 560,
-          "height": 120,
+          "width": 520,
+          "height": 140,
+          "zIndex": 5
+        },
+        {
+          "id": "beam-intensity",
+          "x": 20,
+          "y": 180,
+          "width": 620,
+          "height": 340,
           "zIndex": 4
         },
         {
-          "id": "demo-sine",
-          "x": 20,
-          "y": 160,
-          "width": 560,
-          "height": 320,
+          "id": "beam-gauge",
+          "x": 660,
+          "y": 20,
+          "width": 320,
+          "height": 300,
           "zIndex": 3
         },
         {
-          "id": "demo-metrics",
-          "x": 600,
-          "y": 160,
-          "width": 520,
-          "height": 320,
-          "zIndex": 2
-        },
-        {
-          "id": "demo-status",
-          "x": 20,
-          "y": 520,
-          "width": 520,
+          "id": "run-status",
+          "x": 660,
+          "y": 340,
+          "width": 320,
           "height": 260,
-          "zIndex": 1
+          "zIndex": 2
         }
       ]
     },
     {
-      "id": "tab-demo-blank",
-      "name": "Blank Canvas",
+      "id": "tab-detectors",
+      "name": "Detector Array",
       "figures": [
         {
           "type": "Label",
-          "id": "demo-note",
-          "title": "Start Here",
+          "id": "detector-note",
+          "title": "Array Overview",
           "settings": {
-            "text": "Use the sidebar to drop in more demo figures or load your own plugins locally.",
+            "text": "Calorimeter live view with synthetic hotspots. Toggle the settings gear to switch grid size or drift.",
             "fontSize": 18,
-            "fontWeight": "500",
-            "backgroundColor": "rgba(248,250,252,0.9)",
-            "color": "rgba(15,23,42,1)",
-            "padding": 12,
-            "borderRadius": 10,
-            "border": "1px dashed rgba(100,116,139,0.8)"
+            "textAlign": "left",
+            "backgroundColor": "rgba(15,118,110,0.12)",
+            "color": "rgba(4,47,46,1)",
+            "padding": 14,
+            "borderRadius": 12,
+            "border": "1px dashed rgba(4,120,87,0.6)"
+          }
+        },
+        {
+          "type": "DetectorHeatmapPlot",
+          "id": "detector-heatmap",
+          "title": "Calorimeter Charge Map",
+          "settings": {
+            "sensorRows": 12,
+            "sensorCols": 12,
+            "hotspotDrift": 0.22,
+            "updateFrequency": 0.8,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "DetectorAnimation",
+          "id": "detector-animation",
+          "title": "Beamline Animation",
+          "settings": {
+            "accentColor": "rgba(94,234,212,1)",
+            "pulseSpeed": 520,
+            "showGrid": true
+          }
+        },
+        {
+          "type": "ParticleTracePlot",
+          "id": "particle-trace",
+          "title": "Track Projection",
+          "settings": {
+            "particleCount": 90,
+            "updateFrequency": 0.5,
+            "dataUrl": "None"
           }
         }
       ],
       "layout": [
         {
-          "id": "demo-note",
-          "x": 40,
-          "y": 40,
+          "id": "detector-note",
+          "x": 20,
+          "y": 20,
           "width": 420,
-          "height": 140,
+          "height": 130,
+          "zIndex": 5
+        },
+        {
+          "id": "detector-heatmap",
+          "x": 20,
+          "y": 170,
+          "width": 520,
+          "height": 420,
+          "zIndex": 4
+        },
+        {
+          "id": "detector-animation",
+          "x": 560,
+          "y": 20,
+          "width": 360,
+          "height": 260,
+          "zIndex": 3
+        },
+        {
+          "id": "particle-trace",
+          "x": 560,
+          "y": 300,
+          "width": 360,
+          "height": 290,
+          "zIndex": 2
+        }
+      ]
+    },
+    {
+      "id": "tab-gallery",
+      "name": "Outreach Gallery",
+      "figures": [
+        {
+          "type": "Label",
+          "id": "gallery-headline",
+          "title": "Public Display",
+          "settings": {
+            "text": "A collection of flashy widgets showing the mock experiment at a glance. Perfect for science fairs.",
+            "fontSize": 19,
+            "fontWeight": "500",
+            "textAlign": "center",
+            "backgroundColor": "rgba(248,250,252,0.8)",
+            "color": "rgba(30,41,59,1)",
+            "padding": 16,
+            "borderRadius": 16,
+            "border": "1px solid rgba(148,163,184,0.6)"
+          }
+        },
+        {
+          "type": "BeamIntensityPlot",
+          "id": "gallery-beam",
+          "title": "Stylized Beam Pulse",
+          "settings": {
+            "amplitude": 1.05,
+            "jitter": 0.12,
+            "harmonics": 5,
+            "updateFrequency": 0.35,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "EventRateGauge",
+          "id": "gallery-gauge",
+          "title": "Live Rate Gauge",
+          "settings": {
+            "targetRate": 180,
+            "maxRate": 260,
+            "updateFrequency": 0.55,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "DetectorAnimation",
+          "id": "gallery-animation",
+          "title": "Detector Glow",
+          "settings": {
+            "accentColor": "rgba(249,115,22,1)",
+            "pulseSpeed": 700,
+            "showGrid": false
+          }
+        }
+      ],
+      "layout": [
+        {
+          "id": "gallery-headline",
+          "x": 20,
+          "y": 20,
+          "width": 620,
+          "height": 120,
+          "zIndex": 4
+        },
+        {
+          "id": "gallery-beam",
+          "x": 20,
+          "y": 160,
+          "width": 620,
+          "height": 320,
+          "zIndex": 3
+        },
+        {
+          "id": "gallery-gauge",
+          "x": 660,
+          "y": 20,
+          "width": 320,
+          "height": 270,
+          "zIndex": 2
+        },
+        {
+          "id": "gallery-animation",
+          "x": 660,
+          "y": 310,
+          "width": 320,
+          "height": 250,
           "zIndex": 1
         }
       ]
     }
   ],
-  "activeTabId": "tab-demo-playground"
+  "activeTabId": "tab-beam"
 }

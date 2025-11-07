@@ -15,19 +15,23 @@ The frontend interacts with backend services (such as FastAPI-based APIs) to fet
 
 ## `gh-pages-demo` branch
 
-You're currently on the **GitHub Pages demo branch**. This build ships with a curated dashboard layout and purely client-side demo figures so it can run without any backend.
+You're currently on the **GitHub Pages demo branch**. This build ships with a curated, physics-inspired dashboard layout and purely client-side demo figures so it can run without any backend.
 
 ### Included demo figures
 
-* `DemoSineWavePlot` – animated twin waveforms that respond to the settings menu.
-* `DemoMetricComparisonPlot` – bar/line combo to mimic KPI tracking.
-* `DemoStatusTable` – rolling health table with inline badges.
-* `Label` widgets – serve as editable callouts/instructions.
+* `BeamIntensityPlot` – layered pulse traces representing accelerator RF structure.
+* `EventRateGauge` – Plotly indicator displaying a drifting collision rate vs. targets.
+* `DetectorHeatmapPlot` – animated calorimeter heatmap with a moving hotspot.
+* `ParticleTracePlot` – GL scatter trace of faux particle hits swirling through a detector.
+* `RunStatusTable` – subsystem dashboard with color-coded status chips.
+* `DetectorAnimation` – purely visual beamline/array animation rendered with CSS pulses.
+* `Label` widgets – editable instructions and story beats for each tab.
 
-The default layout (loaded from `src/resources/defaultLayout.json`) pre-populates two tabs:
+The default layout (loaded from `src/resources/defaultLayout.json`) now pre-populates three tabs:
 
-1. **Interactive Playground** – showcases all demo figures so visitors can drag, resize, and tweak settings immediately.
-2. **Blank Canvas** – an empty workspace with a short note encouraging experimentation.
+1. **Beam Control Room** – beam pulse traces, rate gauge, and subsystem table.
+2. **Detector Array** – calorimeter heatmap, particle traces, and the animated detector view.
+3. **Outreach Gallery** – a flashy mix designed for science fair kiosks.
 
 Because all demo figures use the `NoFetchStrategy`, the page stays completely static-friendly (ideal for GitHub Pages). You can still add your own figures or load plugins locally if you start the dev server.
 
