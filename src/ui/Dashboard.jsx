@@ -43,6 +43,8 @@ export default class Dashboard extends React.Component {
 
       // UI state
       sidebarCollapsed: false,
+      isMobileView: typeof window !== 'undefined' ? window.innerWidth <= 900 : false,
+      mobileSidebarOpen: false,
 
       //Sync state
       syncMode: true,
@@ -186,6 +188,8 @@ handleLoadingTimeout = () => {
    */
   async componentDidMount() {
     try {
+      window.addEventListener('resize', this.handleWindowResize);
+      this.handleWindowResize();
       const savedLayout = this.storageManager.loadLayout(defaultLayout);
       this.tabManager.loadFromJSON(savedLayout);
       
@@ -213,6 +217,7 @@ handleLoadingTimeout = () => {
     this.figureManager.removeListener(this.handleFigureManagerChange);
     this.pluginService.removeListener(this.handlePluginServiceChange);
     this.storageManager.removeListener(this.handleStorageEvent);
+    window.removeEventListener('resize', this.handleWindowResize);
 
     // Clear loading timer if any
     if (this.loadingTimerId) {
@@ -485,9 +490,30 @@ handleLoadingTimeout = () => {
     this.setState({ sidebarCollapsed: collapsed });
   };
 
+  handleWindowResize = () => {
+    const isMobileView = window.innerWidth <= 900;
+    this.setState((prev) => {
+      if (prev.isMobileView === isMobileView) {
+        return null;
+      }
+      return {
+        isMobileView,
+        mobileSidebarOpen: isMobileView ? prev.mobileSidebarOpen : false,
+      };
+    });
+  };
+
+  openMobileSidebar = () => {
+    this.setState({ mobileSidebarOpen: true });
+  };
+
+  closeMobileSidebar = () => {
+    this.setState({ mobileSidebarOpen: false });
+  };
+
   // Update the render method to pass additional props to Sidebar:
   render() {
-    const { loadingPlugins, loadingRemainingMs, tabs, activeTabId, sidebarCollapsed, plugins, syncMode } = this.state;
+    const { loadingPlugins, loadingRemainingMs, tabs, activeTabId, sidebarCollapsed, plugins, syncMode, isMobileView, mobileSidebarOpen } = this.state;
 
     // Only show full-page loading screen on initial load
     if (loadingPlugins) {
@@ -506,6 +532,37 @@ handleLoadingTimeout = () => {
     const figureFactory = this.factoryManager.get('figures');
     const figureTypes = this.registryManager.get('figures').getAll();
 
+    const sidebarElement = (
+      <Sidebar
+        figureTypes={figureTypes}
+        onAddFigure={this.handleAddFigure}
+        onExportLayout={this.handleExportLayout}
+        onExportPlugins={this.handleExportPlugins}
+        onImportLayout={this.handleImportLayout}
+        onImportPlugins={this.handleImportPlugins}
+        onClearLayout={this.handleClearLayout}
+        onResetLayout={this.handleResetLayout}
+        onClearPlugins={this.handleClearPlugins}
+        onResetPlugins={this.handleResetPlugins}
+        onAddPlugin={this.handleAddPlugin}
+        onRemovePlugin={this.handleRemovePlugin}
+        onLoadPlugin={this.handleLoadPlugin}
+        onExportTab={this.handleExportTab}
+        onImportTab={this.handleImportTab}
+        plugins={plugins}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onCollapse={this.handleSidebarCollapse}
+        syncMode={syncMode}
+        onSyncModeChange={this.handleSyncModeChange}
+        dataManager={this.dataFetchManager}
+        zoom={activeTabZoom}
+        onZoomChange={this.handleZoomChange}
+        isMobile={isMobileView}
+        onCloseMobile={this.closeMobileSidebar}
+      />
+    );
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <TabsBar
@@ -517,33 +574,60 @@ handleLoadingTimeout = () => {
           onRenameTab={this.handleRenameTab}
           onReorderTabs={this.handleReorderTabs}
         />
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <Sidebar
-            figureTypes={figureTypes}
-            onAddFigure={this.handleAddFigure}
-            onExportLayout={this.handleExportLayout}
-            onExportPlugins={this.handleExportPlugins}
-            onImportLayout={this.handleImportLayout}
-            onImportPlugins={this.handleImportPlugins}
-            onClearLayout={this.handleClearLayout}
-            onResetLayout={this.handleResetLayout}
-            onClearPlugins={this.handleClearPlugins}
-            onResetPlugins={this.handleResetPlugins}
-            onAddPlugin={this.handleAddPlugin}
-            onRemovePlugin={this.handleRemovePlugin}
-            onLoadPlugin={this.handleLoadPlugin}
-            onExportTab={this.handleExportTab}
-            onImportTab={this.handleImportTab}
-            plugins={plugins}
-            tabs={tabs}
-            activeTabId={activeTabId}
-            onCollapse={this.handleSidebarCollapse}
-            syncMode={syncMode}
-            onSyncModeChange={this.handleSyncModeChange}
-            dataManager={this.dataFetchManager}
-            zoom={activeTabZoom}
-            onZoomChange={this.handleZoomChange}
-          />
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+          {isMobileView ? (
+            <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 20 }}>
+              <button
+                onClick={this.openMobileSidebar}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#111827',
+                  color: '#fff',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                }}
+              >
+                Open Controls
+              </button>
+              {mobileSidebarOpen && (
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    zIndex: 50,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '1rem',
+                  }}
+                  onClick={this.closeMobileSidebar}
+                >
+                  <div
+                    style={{
+                      background: '#fff',
+                      width: '100%',
+                      maxWidth: 420,
+                      maxHeight: '90vh',
+                      overflowY: 'auto',
+                      borderRadius: 12,
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {sidebarElement}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            sidebarElement
+          )}
           <FigureGrid
             figures={activeTab?.figures || []}
             layout={activeTab?.layout || []}
@@ -556,6 +640,8 @@ handleLoadingTimeout = () => {
             dataManager={this.dataFetchManager}
             onDuplicateFigure={this.handleDuplicateFigure}
             zoom={activeTabZoom}
+            onZoomChange={this.handleZoomChange}
+            isMobileView={isMobileView}
           />
         </div>
       </div>

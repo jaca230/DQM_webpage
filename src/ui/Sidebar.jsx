@@ -107,7 +107,9 @@ class Sidebar extends React.Component {
       activeFigureId,
       syncMode = true,
       zoom = 1,
-      onZoomChange = () => {}
+      onZoomChange = () => {},
+      isMobile = false,
+      onCloseMobile,
     } = this.props;
     const {
       selectedFigureType,
@@ -117,6 +119,7 @@ class Sidebar extends React.Component {
       showPluginManagementModal,
       showLayoutManagementModal,
     } = this.state;
+    const isCollapsed = isMobile ? false : collapsed;
 
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     const MIN_ZOOM = 0.2;
@@ -145,17 +148,17 @@ class Sidebar extends React.Component {
     return (
       <div
         style={{
-          width: collapsed ? 48 : width,
-          minWidth: 48,
-          padding: collapsed ? '0.5rem 0' : '1rem',
-          borderRight: '1px solid #ccc',
+          width: isMobile ? '100%' : isCollapsed ? 48 : width,
+          minWidth: isMobile ? 'auto' : 48,
+          padding: isMobile ? '1rem' : isCollapsed ? '0.5rem 0' : '1rem',
+          borderRight: isMobile ? 'none' : '1px solid #ccc',
           backgroundColor: '#f8f8f8',
-          height: '100vh',
+          height: isMobile ? '100%' : '100vh',
           overflowY: 'auto',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: collapsed ? 'center' : 'stretch',
+          alignItems: isMobile ? 'stretch' : isCollapsed ? 'center' : 'stretch',
           transition: 'width 0.2s, padding 0.2s',
           position: 'relative',
         }}
@@ -165,33 +168,53 @@ class Sidebar extends React.Component {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'space-between',
-            marginBottom: collapsed ? 0 : '1rem',
-            paddingBottom: collapsed ? 0 : '0.5rem',
-            borderBottom: collapsed ? 'none' : '1px solid #ddd',
+            justifyContent: isMobile ? 'space-between' : isCollapsed ? 'center' : 'space-between',
+            marginBottom: isMobile ? '1rem' : isCollapsed ? 0 : '1rem',
+            paddingBottom: isMobile ? '0.5rem' : isCollapsed ? 0 : '0.5rem',
+            borderBottom: isMobile ? '1px solid #ddd' : isCollapsed ? 'none' : '1px solid #ddd',
             width: '100%',
           }}
         >
-          {!collapsed && <h3 style={{ margin: 0 }}>Sidebar</h3>}
-          <button
-            onClick={this.toggleCollapse}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label="Toggle sidebar collapse"
-          >
-            {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
-          </button>
+          {!isCollapsed && <h3 style={{ margin: 0 }}>Controls</h3>}
+          {isMobile ? (
+            <button
+              onClick={onCloseMobile}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                color: '#111827',
+              }}
+            >
+              Close
+            </button>
+          ) : (
+            <button
+              onClick={this.toggleCollapse}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Toggle sidebar collapse"
+            >
+              {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
+            </button>
+          )}
         </div>
 
         {/* Main content */}
-        {!collapsed && (
+        {(!isCollapsed || isMobile) && (
           <>
             <div style={{ marginBottom: '1rem' }}>
               <h3>Available Figures</h3>
@@ -408,7 +431,7 @@ class Sidebar extends React.Component {
         )}
 
         {/* Resize handle */}
-        {!collapsed && (
+        {!isCollapsed && !isMobile && (
           <div
             onMouseDown={this.onMouseDown}
             style={{
