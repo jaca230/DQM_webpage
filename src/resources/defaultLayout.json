@@ -1,11 +1,203 @@
 {
   "tabs": [
     {
-      "id": "tab1755231438219",
-      "name": "New Tab 1",
-      "figures": [],
-      "layout": []
+      "id": "tab-overview",
+      "name": "Overview",
+      "defaultZoom": 1,
+      "figures": [
+        {
+          "type": "Label",
+          "id": "overview-notes",
+          "title": "Getting Started",
+          "settings": {
+            "text": "Welcome! This workspace runs entirely in the browser so you can explore layouts without wiring a backend.\\n\\nTips:\\n• Drag/resize tiles, or duplicate them with the copy icon.\\n• Click the settings gear on any widget to adjust refresh timing, colors, or copy text.\\n• Use the sidebar to add/remove figures, import/export layouts, and load plugin bundles.",
+            "fontSize": 20,
+            "fontWeight": "600",
+            "textAlign": "left",
+            "color": "rgba(15,23,42,1)",
+            "backgroundColor": "rgba(191,219,254,0.7)",
+            "padding": 24,
+            "borderRadius": 18,
+            "border": "1px solid rgba(59,130,246,0.45)"
+          }
+        },
+        {
+          "type": "BeamIntensityPlot",
+          "id": "overview-ticker",
+          "title": "Ticker Plot",
+          "settings": {
+            "amplitude": 1.3,
+            "jitter": 0.16,
+            "harmonics": 4,
+            "updateFrequency": 0.4,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "EventRateGauge",
+          "id": "overview-gauge",
+          "title": "Event Rate",
+          "settings": {
+            "targetRate": 250,
+            "maxRate": 330,
+            "updateFrequency": 0.5,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "ChannelRateBars",
+          "id": "overview-bars",
+          "title": "Channel Rate Monitor",
+          "settings": {
+            "highlightedChannel": "B1",
+            "updateFrequency": 0.9,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "RunStatusTable",
+          "id": "overview-status",
+          "title": "Subsystem Status",
+          "settings": {
+            "maxRows": 6,
+            "updateFrequency": 1.2,
+            "dataUrl": "None"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "id": "overview-notes",
+          "x": 20,
+          "y": 20,
+          "width": 820,
+          "height": 220,
+          "zIndex": 5
+        },
+        {
+          "id": "overview-ticker",
+          "x": 20,
+          "y": 260,
+          "width": 880,
+          "height": 360,
+          "zIndex": 4
+        },
+        {
+          "id": "overview-gauge",
+          "x": 920,
+          "y": 20,
+          "width": 300,
+          "height": 320,
+          "zIndex": 3
+        },
+        {
+          "id": "overview-bars",
+          "x": 920,
+          "y": 360,
+          "width": 300,
+          "height": 260,
+          "zIndex": 2
+        },
+        {
+          "id": "overview-status",
+          "x": 20,
+          "y": 640,
+          "width": 700,
+          "height": 300,
+          "zIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "tab-visualizations",
+      "name": "Visualization Ideas",
+      "defaultZoom": 1,
+      "figures": [
+        {
+          "type": "Label",
+          "id": "visual-notes",
+          "title": "What To Try",
+          "settings": {
+            "text": "This tab highlights patterns you can build into your own plugins.\\n• The oscilloscope widget loops through sample buffers for multiple channels.\\n• The histogram continually grows as new samples stream in.\\n• The contour plot is great for profiles or occupancy maps.\\nDuplicate any widget and wire it to real data to prototype quickly.",
+            "fontSize": 19,
+            "textAlign": "left",
+            "color": "rgba(4,47,46,1)",
+            "backgroundColor": "rgba(16,185,129,0.22)",
+            "padding": 22,
+            "borderRadius": 16,
+            "border": "1px dashed rgba(5,150,105,0.6)"
+          }
+        },
+        {
+          "type": "OscilloscopeTracePlot",
+          "id": "visual-scope",
+          "title": "Oscilloscope Traces",
+          "settings": {
+            "channelCount": 3,
+            "sampleCount": 220,
+            "updateFrequency": 0.4,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "EnergySpectrumHistogram",
+          "id": "visual-histogram",
+          "title": "Updating Histogram",
+          "settings": {
+            "meanEnergy": 4.5,
+            "spread": 1.3,
+            "updateFrequency": 1,
+            "dataUrl": "None"
+          }
+        },
+        {
+          "type": "BeamProfileHistogram",
+          "id": "visual-profile",
+          "title": "Beam Profile",
+          "settings": {
+            "sigmaX": 6,
+            "sigmaY": 3.5,
+            "rotation": 10,
+            "updateFrequency": 0.7,
+            "dataUrl": "None"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "id": "visual-notes",
+          "x": 20,
+          "y": 20,
+          "width": 740,
+          "height": 200,
+          "zIndex": 5
+        },
+        {
+          "id": "visual-scope",
+          "x": 20,
+          "y": 240,
+          "width": 780,
+          "height": 360,
+          "zIndex": 4
+        },
+        {
+          "id": "visual-histogram",
+          "x": 820,
+          "y": 240,
+          "width": 360,
+          "height": 360,
+          "zIndex": 3
+        },
+        {
+          "id": "visual-profile",
+          "x": 20,
+          "y": 620,
+          "width": 660,
+          "height": 320,
+          "zIndex": 2
+        }
+      ]
     }
   ],
-  "activeTabId": "tab1755231438219"
+  "activeTabId": "tab-overview"
 }

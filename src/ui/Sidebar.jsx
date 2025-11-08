@@ -12,6 +12,7 @@ class Sidebar extends React.Component {
     width: 220,
     resizing: false,
     lastX: 0,
+    zoomInput: null,
 
     // Modal visibility
     showPluginRegistrationModal: false,
@@ -98,6 +99,29 @@ class Sidebar extends React.Component {
     document.removeEventListener('mouseup', this.onMouseUp);
   };
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.zoom !== this.props.zoom) {
+      this.setState((prevState) =>
+        prevState.zoomInput === null ? null : { zoomInput: null }
+      );
+    }
+  }
+
+  handleZoomInputChange = (e) => {
+    this.setState({ zoomInput: e.target.value });
+  };
+
+  handleZoomInputApply = () => {
+    const { zoomInput } = this.state;
+    if (zoomInput === null || zoomInput === '') return;
+    const percentValue = parseFloat(zoomInput);
+    if (!Number.isFinite(percentValue)) return;
+    const clampedPercent = Math.min(500, Math.max(20, percentValue));
+    const zoomValue = clampedPercent / 100;
+    this.props.onZoomChange?.(parseFloat(zoomValue.toFixed(3)));
+    this.setState({ zoomInput: null });
+  };
+
   render() {
     const { 
       figureTypes, 
@@ -105,7 +129,11 @@ class Sidebar extends React.Component {
       tabs = [], 
       activeTabId, 
       activeFigureId,
-      syncMode = true
+      syncMode = true,
+      zoom = 1,
+      onZoomChange = () => {},
+      isMobile = false,
+      onCloseMobile,
     } = this.props;
     const {
       selectedFigureType,
@@ -114,7 +142,23 @@ class Sidebar extends React.Component {
       showPluginRegistrationModal,
       showPluginManagementModal,
       showLayoutManagementModal,
+      zoomInput,
     } = this.state;
+    const isCollapsed = isMobile ? false : collapsed;
+
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 5;
+    const currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, typeof zoom === 'number' ? zoom : 1));
+    const defaultZoomValue = Math.min(
+      MAX_ZOOM,
+      Math.max(MIN_ZOOM, typeof activeTab?.defaultZoom === 'number' ? activeTab.defaultZoom : 1)
+    );
+    const zoomInputValue =
+      zoomInput !== null
+        ? zoomInput
+        : Math.round(currentZoom * 100).toString();
+    const zoomInputValid = zoomInput !== null && zoomInput !== '' && Number.isFinite(parseFloat(zoomInput));
 
     const options = figureTypes.map(([name, cls]) => ({
       value: name,
@@ -134,17 +178,17 @@ class Sidebar extends React.Component {
     return (
       <div
         style={{
-          width: collapsed ? 48 : width,
-          minWidth: 48,
-          padding: collapsed ? '0.5rem 0' : '1rem',
-          borderRight: '1px solid #ccc',
+          width: isMobile ? '100%' : isCollapsed ? 48 : width,
+          minWidth: isMobile ? 'auto' : 48,
+          padding: isMobile ? '1rem' : isCollapsed ? '0.5rem 0' : '1rem',
+          borderRight: isMobile ? 'none' : '1px solid #ccc',
           backgroundColor: '#f8f8f8',
-          height: '100vh',
+          height: isMobile ? '100%' : '100vh',
           overflowY: 'auto',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: collapsed ? 'center' : 'stretch',
+          alignItems: isMobile ? 'stretch' : isCollapsed ? 'center' : 'stretch',
           transition: 'width 0.2s, padding 0.2s',
           position: 'relative',
         }}
@@ -154,33 +198,53 @@ class Sidebar extends React.Component {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'space-between',
-            marginBottom: collapsed ? 0 : '1rem',
-            paddingBottom: collapsed ? 0 : '0.5rem',
-            borderBottom: collapsed ? 'none' : '1px solid #ddd',
+            justifyContent: isMobile ? 'space-between' : isCollapsed ? 'center' : 'space-between',
+            marginBottom: isMobile ? '1rem' : isCollapsed ? 0 : '1rem',
+            paddingBottom: isMobile ? '0.5rem' : isCollapsed ? 0 : '0.5rem',
+            borderBottom: isMobile ? '1px solid #ddd' : isCollapsed ? 'none' : '1px solid #ddd',
             width: '100%',
           }}
         >
-          {!collapsed && <h3 style={{ margin: 0 }}>Sidebar</h3>}
-          <button
-            onClick={this.toggleCollapse}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label="Toggle sidebar collapse"
-          >
-            {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
-          </button>
+          {!isCollapsed && <h3 style={{ margin: 0 }}>Controls</h3>}
+          {isMobile ? (
+            <button
+              onClick={onCloseMobile}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                color: '#111827',
+              }}
+            >
+              Close
+            </button>
+          ) : (
+            <button
+              onClick={this.toggleCollapse}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Toggle sidebar collapse"
+            >
+              {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
+            </button>
+          )}
         </div>
 
         {/* Main content */}
-        {!collapsed && (
+        {(!isCollapsed || isMobile) && (
           <>
             <div style={{ marginBottom: '1rem' }}>
               <h3>Available Figures</h3>
@@ -215,6 +279,169 @@ class Sidebar extends React.Component {
               >
                 Add Figure
               </button>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <h3>Canvas Zoom</h3>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '0.5rem',
+              }}>
+                <button
+                  onClick={() => onZoomChange(Math.max(MIN_ZOOM, +(currentZoom - 0.1).toFixed(2)))}
+                  disabled={currentZoom <= MIN_ZOOM}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: currentZoom <= MIN_ZOOM ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    opacity: currentZoom <= MIN_ZOOM ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentZoom > MIN_ZOOM) {
+                      e.target.style.background = '#111827';
+                      e.target.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  −
+                </button>
+                <input
+                  type="range"
+                  min={20}
+                  max={500}
+                  value={Math.round(currentZoom * 100)}
+                  onChange={(e) => {
+                    const sliderValue = parseInt(e.target.value, 10);
+                    if (Number.isNaN(sliderValue)) {
+                      return;
+                    }
+                    onZoomChange(
+                      Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, sliderValue / 100))
+                    );
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    accentColor: '#111827',
+                  }}
+                />
+                <button
+                  onClick={() => onZoomChange(Math.min(MAX_ZOOM, +(currentZoom + 0.1).toFixed(2)))}
+                  disabled={currentZoom >= MAX_ZOOM}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: currentZoom >= MAX_ZOOM ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    opacity: currentZoom >= MAX_ZOOM ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentZoom < MAX_ZOOM) {
+                      e.target.style.background = '#111827';
+                      e.target.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+              }}>
+                <input
+                  type="number"
+                  min={20}
+                  max={500}
+                  value={zoomInputValue}
+                  onChange={this.handleZoomInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      this.handleZoomInputApply();
+                    }
+                  }}
+                  style={{
+                    width: 35,
+                    padding: '0.25rem 0.4rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                  }}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>%</span>
+                <button
+                  onClick={this.handleZoomInputApply}
+                  disabled={!zoomInputValid}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: zoomInputValid ? '#111827' : '#fff',
+                    color: zoomInputValid ? '#fff' : '#111827',
+                    cursor: zoomInputValid ? 'pointer' : 'not-allowed',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    lineHeight: 1,
+                    opacity: zoomInputValid ? 1 : 0.6,
+                  }}
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => onZoomChange(defaultZoomValue)}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#111827';
+                    e.target.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
@@ -267,7 +494,7 @@ class Sidebar extends React.Component {
         )}
 
         {/* Resize handle */}
-        {!collapsed && (
+        {!isCollapsed && !isMobile && (
           <div
             onMouseDown={this.onMouseDown}
             style={{

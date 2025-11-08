@@ -1,10 +1,33 @@
 /**
  * Manages tab operations including creation, deletion, renaming, and selection
  */
+const ZOOM_MIN = 0.2;
+const ZOOM_MAX = 5;
+const DEFAULT_ZOOM = 1;
+
+const normalizeZoomValue = (value) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+};
+
+const normalizeTab = (tab = {}) => {
+  const normalizedDefaultZoom = normalizeZoomValue(tab.defaultZoom) ?? DEFAULT_ZOOM;
+  const normalizedZoom = normalizeZoomValue(tab.zoom) ?? normalizedDefaultZoom;
+
+  return {
+    ...tab,
+    defaultZoom: normalizedDefaultZoom,
+    zoom: normalizedZoom,
+  };
+};
+
 export default class TabManager {
   constructor(initialTabs = [], initialActiveTabId = null) {
-    this.tabs = [...initialTabs];
-    this.activeTabId = initialActiveTabId || (initialTabs.length > 0 ? initialTabs[0].id : null);
+    const normalizedTabs = initialTabs.map(normalizeTab);
+    this.tabs = normalizedTabs;
+    this.activeTabId = initialActiveTabId || (normalizedTabs.length > 0 ? normalizedTabs[0].id : null);
     this.listeners = new Set();
   }
 
@@ -65,13 +88,13 @@ export default class TabManager {
    */
   addTab(options = {}) {
     const newTabId = options.id || `tab${Date.now()}`;
-    const newTab = {
+    const newTab = normalizeTab({
       id: newTabId,
       name: options.name || `New Tab ${this.tabs.length + 1}`,
       figures: options.figures || [],
       layout: options.layout || [],
       ...options
-    };
+    });
 
     this.tabs.push(newTab);
     this.activeTabId = newTabId;
@@ -145,12 +168,17 @@ export default class TabManager {
    * @returns {boolean} True if updated, false if not found
    */
   updateTab(tabId, updates) {
-    const tab = this.tabs.find(tab => tab.id === tabId);
-    if (!tab) {
+    const tabIndex = this.tabs.findIndex(tab => tab.id === tabId);
+    if (tabIndex === -1) {
       return false;
     }
 
-    Object.assign(tab, updates);
+    const updatedTab = normalizeTab({
+      ...this.tabs[tabIndex],
+      ...updates
+    });
+
+    this.tabs[tabIndex] = updatedTab;
     this.notifyListeners();
     return true;
   }
@@ -171,12 +199,12 @@ export default class TabManager {
    * Clear all tabs and create a default tab
    */
   clearTabs() {
-    this.tabs = [{
+    this.tabs = [normalizeTab({
       id: 'tab1',
       name: 'Default Tab',
       figures: [],
       layout: []
-    }];
+    })];
     this.activeTabId = 'tab1';
     this.notifyListeners();
   }
@@ -225,7 +253,7 @@ export default class TabManager {
       throw new Error('Invalid tabs data');
     }
 
-    this.tabs = [...data.tabs];
+    this.tabs = data.tabs.map(normalizeTab);
     this.activeTabId = data.activeTabId || (data.tabs.length > 0 ? data.tabs[0].id : null);
     this.notifyListeners();
   }

@@ -3,18 +3,34 @@ import FigureTile from './FigureTile';
 import { Rnd } from 'react-rnd';
 import 'react-resizable/css/styles.css';
 
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 5;
+
 class FigureGrid extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      zoom: 1,
       containerWidth: window.innerWidth,
       containerHeight: window.innerHeight,
       layout: props.layout || [],
     };
 
     this.containerRef = React.createRef();
+    this.lastCanvasSize = { width: window.innerWidth, height: window.innerHeight };
+    this.resizeNotificationRaf = null;
+    this.pinchState = {
+      active: false,
+      startDistance: 0,
+      startZoom: props.zoom || 1,
+    };
+    this.panState = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      scrollLeft: 0,
+      scrollTop: 0,
+    };
   }
 
   componentDidMount() {
@@ -27,6 +43,11 @@ class FigureGrid extends React.Component {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.updateContainerSize);
+    if (this.resizeNotificationRaf) {
+      cancelAnimationFrame(this.resizeNotificationRaf);
+      this.resizeNotificationRaf = null;
+    }
+    this.resetTouchState();
   }
 
   componentDidUpdate(prevProps) {
@@ -44,6 +65,14 @@ class FigureGrid extends React.Component {
     if (prevProps.sidebarCollapsed !== this.props.sidebarCollapsed) {
       // Add a small delay to let the sidebar animation complete
       setTimeout(this.updateContainerSize, 300);
+    }
+
+    if (prevProps.zoom !== this.props.zoom) {
+      this.scheduleResizeNotification();
+    }
+
+    if (prevProps.isMobileView !== this.props.isMobileView) {
+      this.resetTouchState();
     }
   }
 
@@ -126,20 +155,138 @@ class FigureGrid extends React.Component {
   };
 
   onDragStop = (id, d) => {
-    this.updateLayoutItem(id, { x: d.x, y: d.y });
+    const layoutItem = this.state.layout.find((item) => item.id === id);
+    if (!layoutItem) return;
+
+    const canvasWidth = this.lastCanvasSize?.width;
+    const canvasHeight = this.lastCanvasSize?.height;
+    const maxX = typeof canvasWidth === 'number' ? Math.max(0, canvasWidth - layoutItem.width) : null;
+    const maxY = typeof canvasHeight === 'number' ? Math.max(0, canvasHeight - layoutItem.height) : null;
+
+    const clampedX = typeof maxX === 'number' ? Math.min(Math.max(0, d.x), maxX) : d.x;
+    const clampedY = typeof maxY === 'number' ? Math.min(Math.max(0, d.y), maxY) : d.y;
+
+    this.updateLayoutItem(id, { x: clampedX, y: clampedY });
     this.bringToFront(id);
+    this.scheduleResizeNotification();
   };
 
   onResizeStop = (id, ref, position) => {
     const width = parseInt(ref.style.width, 10);
     const height = parseInt(ref.style.height, 10);
-    this.updateLayoutItem(id, { width, height, x: position.x, y: position.y });
+    const canvasWidth = this.lastCanvasSize?.width;
+    const canvasHeight = this.lastCanvasSize?.height;
+
+    const maxWidth = typeof canvasWidth === 'number'
+      ? Math.max(50, canvasWidth - position.x)
+      : null;
+    const maxHeight = typeof canvasHeight === 'number'
+      ? Math.max(50, canvasHeight - position.y)
+      : null;
+
+    const clampedWidth = maxWidth !== null
+      ? Math.max(50, Math.min(width, maxWidth))
+      : Math.max(50, width);
+    const clampedHeight = maxHeight !== null
+      ? Math.max(50, Math.min(height, maxHeight))
+      : Math.max(50, height);
+
+    const clampedX = typeof canvasWidth === 'number'
+      ? Math.min(Math.max(0, position.x), Math.max(0, canvasWidth - clampedWidth))
+      : position.x;
+    const clampedY = typeof canvasHeight === 'number'
+      ? Math.min(Math.max(0, position.y), Math.max(0, canvasHeight - clampedHeight))
+      : position.y;
+
+    this.updateLayoutItem(id, {
+      width: clampedWidth,
+      height: clampedHeight,
+      x: clampedX,
+      y: clampedY,
+    });
     this.bringToFront(id);
+    this.scheduleResizeNotification();
+  };
+
+  scheduleResizeNotification = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (this.resizeNotificationRaf) {
+      cancelAnimationFrame(this.resizeNotificationRaf);
+    }
+    this.resizeNotificationRaf = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.resizeNotificationRaf = null;
+    });
+  };
+
+  getTouchDistance = (touches) => {
+    if (touches.length < 2) return 0;
+    const [a, b] = touches;
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  handleTouchStart = (e) => {
+    if (!this.props.isMobileView) return;
+    if (e.touches.length === 2) {
+      this.pinchState.active = true;
+      this.pinchState.startDistance = this.getTouchDistance(e.touches);
+      this.pinchState.startZoom = this.props.zoom || 1;
+      this.panState.active = false;
+    } else if (e.touches.length === 1 && !this.pinchState.active) {
+      this.panState.active = true;
+      this.panState.startX = e.touches[0].clientX;
+      this.panState.startY = e.touches[0].clientY;
+      this.panState.scrollLeft = this.containerRef.current?.scrollLeft || 0;
+      this.panState.scrollTop = this.containerRef.current?.scrollTop || 0;
+    }
+  };
+
+  handleTouchMove = (e) => {
+    if (!this.props.isMobileView) return;
+    if (this.pinchState.active && e.touches.length === 2) {
+      e.preventDefault();
+      const distance = this.getTouchDistance(e.touches);
+      if (!distance) return;
+      const scale = distance / (this.pinchState.startDistance || 1);
+      const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.pinchState.startZoom * scale));
+      this.props.onZoomChange?.(parseFloat(nextZoom.toFixed(3)));
+    } else if (this.panState.active && e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = this.panState.startX - touch.clientX;
+      const deltaY = this.panState.startY - touch.clientY;
+      if (this.containerRef.current) {
+        this.containerRef.current.scrollLeft = this.panState.scrollLeft + deltaX;
+        this.containerRef.current.scrollTop = this.panState.scrollTop + deltaY;
+      }
+    }
+  };
+
+  handleTouchEnd = (e) => {
+    if (!this.props.isMobileView) return;
+    const touchesRemaining = e.touches?.length || 0;
+    if (touchesRemaining < 2 && this.pinchState.active) {
+      this.pinchState.active = false;
+      this.pinchState.startDistance = 0;
+    }
+    if (touchesRemaining === 0 && this.panState.active) {
+      this.panState.active = false;
+    }
+  };
+
+  resetTouchState = () => {
+    this.pinchState.active = false;
+    this.pinchState.startDistance = 0;
+    this.panState.active = false;
   };
 
   calculateRequiredCanvasSize() {
-    const { layout, zoom } = this.state;
-    const { containerWidth, containerHeight } = this.state;
+    const { layout, containerWidth, containerHeight } = this.state;
+    const zoom = this.props.zoom ?? 1;
 
     if (layout.length === 0) {
       return {
@@ -180,9 +327,20 @@ class FigureGrid extends React.Component {
   }
 
   render() {
-    const { figures, onDeleteFigure, onTitleChange, figureFactory, onDuplicateFigure } = this.props;
-    const { zoom } = this.state;
-    const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
+    const { figures, onDeleteFigure, onTitleChange, figureFactory, onDuplicateFigure, isMobileView } = this.props;
+    const zoom = this.props.zoom ?? 1;
+    const canvasSize = this.calculateRequiredCanvasSize();
+    this.lastCanvasSize = canvasSize;
+    const { width: canvasWidth, height: canvasHeight } = canvasSize;
+
+    const touchHandlers = isMobileView
+      ? {
+          onTouchStart: this.handleTouchStart,
+          onTouchMove: this.handleTouchMove,
+          onTouchEnd: this.handleTouchEnd,
+          onTouchCancel: this.handleTouchEnd,
+        }
+      : {};
 
     return (
       <div
@@ -195,7 +353,9 @@ class FigureGrid extends React.Component {
           background: '#f0f0f0',
           border: '1px solid #ccc',
           transition: 'width 0.3s',
+          touchAction: isMobileView ? 'none' : 'auto',
         }}
+        {...touchHandlers}
       >
         <div
           style={{
@@ -208,37 +368,51 @@ class FigureGrid extends React.Component {
             transition: 'width 0.3s, height 0.3s',
           }}
         >
-          {figures.map((fig) => {
-            const layoutItem = this.state.layout.find((l) => l.id === fig.id);
-            if (!layoutItem) return null;
+            {figures.map((fig) => {
+              const layoutItem = this.state.layout.find((l) => l.id === fig.id);
+              if (!layoutItem) return null;
 
-            const FigureComponent = figureFactory.registry.get(fig.type);
-            const zIndex = layoutItem.zIndex || 1;
+              const FigureComponent = figureFactory.registry.get(fig.type);
+              const zIndex = layoutItem.zIndex || 1;
 
-            // Get settingSchema from the figure class, default to empty object
-            const schema = FigureComponent?.settingSchema || {};
+              // Get settingSchema from the figure class, default to empty object
+              const schema = FigureComponent?.settingSchema || {};
 
-            return (
-              <Rnd
-                key={fig.id}
-                size={{ width: layoutItem.width, height: layoutItem.height }}
+              const resizeConfig = isMobileView
+                ? {
+                    top: false,
+                    right: false,
+                    bottom: false,
+                    left: false,
+                    topRight: false,
+                    bottomRight: false,
+                    bottomLeft: false,
+                    topLeft: false,
+                  }
+                : {
+                    top: true,
+                    right: true,
+                    bottom: true,
+                    left: true,
+                    topRight: true,
+                    bottomRight: true,
+                    bottomLeft: true,
+                    topLeft: true,
+                  };
+
+              return (
+                <Rnd
+                  key={fig.id}
+                  size={{ width: layoutItem.width, height: layoutItem.height }}
                 position={{ x: layoutItem.x, y: layoutItem.y }}
+                scale={zoom}
+                disableDragging={isMobileView}
                 onDragStop={(e, d) => this.onDragStop(fig.id, d)}
                 onResizeStop={(e, direction, ref, delta, position) =>
                   this.onResizeStop(fig.id, ref, position)
                 }
-                bounds="parent"
                 dragHandleClassName="drag-handle"
-                enableResizing={{
-                  top: true,
-                  right: true,
-                  bottom: true,
-                  left: true,
-                  topRight: true,
-                  bottomRight: true,
-                  bottomLeft: true,
-                  topLeft: true,
-                }}
+                enableResizing={resizeConfig}
                 style={{
                   border: '1px solid #aaa',
                   background: 'white',
