@@ -376,13 +376,6 @@ class Sidebar extends React.Component {
                 gap: '0.5rem',
                 flexWrap: 'wrap',
               }}>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#6b7280',
-                  fontWeight: 500,
-                }}>
-                  {Math.round(currentZoom * 100)}%
-                </div>
                 <input
                   type="number"
                   min={20}
@@ -396,7 +389,7 @@ class Sidebar extends React.Component {
                     }
                   }}
                   style={{
-                    width: 70,
+                    width: 35,
                     padding: '0.25rem 0.4rem',
                     border: '1px solid #d1d5db',
                     borderRadius: 4,
