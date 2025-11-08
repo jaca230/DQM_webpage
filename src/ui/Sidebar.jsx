@@ -12,6 +12,7 @@ class Sidebar extends React.Component {
     width: 220,
     resizing: false,
     lastX: 0,
+    zoomInput: null,
 
     // Modal visibility
     showPluginRegistrationModal: false,
@@ -98,6 +99,29 @@ class Sidebar extends React.Component {
     document.removeEventListener('mouseup', this.onMouseUp);
   };
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.zoom !== this.props.zoom) {
+      this.setState((prevState) =>
+        prevState.zoomInput === null ? null : { zoomInput: null }
+      );
+    }
+  }
+
+  handleZoomInputChange = (e) => {
+    this.setState({ zoomInput: e.target.value });
+  };
+
+  handleZoomInputApply = () => {
+    const { zoomInput } = this.state;
+    if (zoomInput === null || zoomInput === '') return;
+    const percentValue = parseFloat(zoomInput);
+    if (!Number.isFinite(percentValue)) return;
+    const clampedPercent = Math.min(500, Math.max(20, percentValue));
+    const zoomValue = clampedPercent / 100;
+    this.props.onZoomChange?.(parseFloat(zoomValue.toFixed(3)));
+    this.setState({ zoomInput: null });
+  };
+
   render() {
     const { 
       figureTypes, 
@@ -118,6 +142,7 @@ class Sidebar extends React.Component {
       showPluginRegistrationModal,
       showPluginManagementModal,
       showLayoutManagementModal,
+      zoomInput,
     } = this.state;
     const isCollapsed = isMobile ? false : collapsed;
 
@@ -129,6 +154,11 @@ class Sidebar extends React.Component {
       MAX_ZOOM,
       Math.max(MIN_ZOOM, typeof activeTab?.defaultZoom === 'number' ? activeTab.defaultZoom : 1)
     );
+    const zoomInputValue =
+      zoomInput !== null
+        ? zoomInput
+        : Math.round(currentZoom * 100).toString();
+    const zoomInputValid = zoomInput !== null && zoomInput !== '' && Number.isFinite(parseFloat(zoomInput));
 
     const options = figureTypes.map(([name, cls]) => ({
       value: name,
@@ -343,8 +373,8 @@ class Sidebar extends React.Component {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
                 gap: '0.5rem',
+                flexWrap: 'wrap',
               }}>
                 <div style={{
                   fontSize: '0.75rem',
@@ -353,6 +383,46 @@ class Sidebar extends React.Component {
                 }}>
                   {Math.round(currentZoom * 100)}%
                 </div>
+                <input
+                  type="number"
+                  min={20}
+                  max={500}
+                  value={zoomInputValue}
+                  onChange={this.handleZoomInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      this.handleZoomInputApply();
+                    }
+                  }}
+                  style={{
+                    width: 70,
+                    padding: '0.25rem 0.4rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                  }}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>%</span>
+                <button
+                  onClick={this.handleZoomInputApply}
+                  disabled={!zoomInputValid}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: zoomInputValid ? '#111827' : '#fff',
+                    color: zoomInputValid ? '#fff' : '#111827',
+                    cursor: zoomInputValid ? 'pointer' : 'not-allowed',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    lineHeight: 1,
+                    opacity: zoomInputValid ? 1 : 0.6,
+                  }}
+                >
+                  Apply
+                </button>
                 <button
                   onClick={() => onZoomChange(defaultZoomValue)}
                   style={{
