@@ -8,13 +8,14 @@ class FigureGrid extends React.Component {
     super(props);
 
     this.state = {
-      zoom: 1,
       containerWidth: window.innerWidth,
       containerHeight: window.innerHeight,
       layout: props.layout || [],
     };
 
     this.containerRef = React.createRef();
+    this.lastCanvasSize = { width: window.innerWidth, height: window.innerHeight };
+    this.resizeNotificationRaf = null;
   }
 
   componentDidMount() {
@@ -27,6 +28,10 @@ class FigureGrid extends React.Component {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.updateContainerSize);
+    if (this.resizeNotificationRaf) {
+      cancelAnimationFrame(this.resizeNotificationRaf);
+      this.resizeNotificationRaf = null;
+    }
   }
 
   componentDidUpdate(prevProps) {
@@ -44,6 +49,10 @@ class FigureGrid extends React.Component {
     if (prevProps.sidebarCollapsed !== this.props.sidebarCollapsed) {
       // Add a small delay to let the sidebar animation complete
       setTimeout(this.updateContainerSize, 300);
+    }
+
+    if (prevProps.zoom !== this.props.zoom) {
+      this.scheduleResizeNotification();
     }
   }
 
@@ -126,20 +135,75 @@ class FigureGrid extends React.Component {
   };
 
   onDragStop = (id, d) => {
-    this.updateLayoutItem(id, { x: d.x, y: d.y });
+    const layoutItem = this.state.layout.find((item) => item.id === id);
+    if (!layoutItem) return;
+
+    const canvasWidth = this.lastCanvasSize?.width;
+    const canvasHeight = this.lastCanvasSize?.height;
+    const maxX = typeof canvasWidth === 'number' ? Math.max(0, canvasWidth - layoutItem.width) : null;
+    const maxY = typeof canvasHeight === 'number' ? Math.max(0, canvasHeight - layoutItem.height) : null;
+
+    const clampedX = typeof maxX === 'number' ? Math.min(Math.max(0, d.x), maxX) : d.x;
+    const clampedY = typeof maxY === 'number' ? Math.min(Math.max(0, d.y), maxY) : d.y;
+
+    this.updateLayoutItem(id, { x: clampedX, y: clampedY });
     this.bringToFront(id);
+    this.scheduleResizeNotification();
   };
 
   onResizeStop = (id, ref, position) => {
     const width = parseInt(ref.style.width, 10);
     const height = parseInt(ref.style.height, 10);
-    this.updateLayoutItem(id, { width, height, x: position.x, y: position.y });
+    const canvasWidth = this.lastCanvasSize?.width;
+    const canvasHeight = this.lastCanvasSize?.height;
+
+    const maxWidth = typeof canvasWidth === 'number'
+      ? Math.max(50, canvasWidth - position.x)
+      : null;
+    const maxHeight = typeof canvasHeight === 'number'
+      ? Math.max(50, canvasHeight - position.y)
+      : null;
+
+    const clampedWidth = maxWidth !== null
+      ? Math.max(50, Math.min(width, maxWidth))
+      : Math.max(50, width);
+    const clampedHeight = maxHeight !== null
+      ? Math.max(50, Math.min(height, maxHeight))
+      : Math.max(50, height);
+
+    const clampedX = typeof canvasWidth === 'number'
+      ? Math.min(Math.max(0, position.x), Math.max(0, canvasWidth - clampedWidth))
+      : position.x;
+    const clampedY = typeof canvasHeight === 'number'
+      ? Math.min(Math.max(0, position.y), Math.max(0, canvasHeight - clampedHeight))
+      : position.y;
+
+    this.updateLayoutItem(id, {
+      width: clampedWidth,
+      height: clampedHeight,
+      x: clampedX,
+      y: clampedY,
+    });
     this.bringToFront(id);
+    this.scheduleResizeNotification();
+  };
+
+  scheduleResizeNotification = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (this.resizeNotificationRaf) {
+      cancelAnimationFrame(this.resizeNotificationRaf);
+    }
+    this.resizeNotificationRaf = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.resizeNotificationRaf = null;
+    });
   };
 
   calculateRequiredCanvasSize() {
-    const { layout, zoom } = this.state;
-    const { containerWidth, containerHeight } = this.state;
+    const { layout, containerWidth, containerHeight } = this.state;
+    const zoom = this.props.zoom ?? 1;
 
     if (layout.length === 0) {
       return {
@@ -181,8 +245,10 @@ class FigureGrid extends React.Component {
 
   render() {
     const { figures, onDeleteFigure, onTitleChange, figureFactory, onDuplicateFigure } = this.props;
-    const { zoom } = this.state;
-    const { width: canvasWidth, height: canvasHeight } = this.calculateRequiredCanvasSize();
+    const zoom = this.props.zoom ?? 1;
+    const canvasSize = this.calculateRequiredCanvasSize();
+    this.lastCanvasSize = canvasSize;
+    const { width: canvasWidth, height: canvasHeight } = canvasSize;
 
     return (
       <div
@@ -223,11 +289,11 @@ class FigureGrid extends React.Component {
                 key={fig.id}
                 size={{ width: layoutItem.width, height: layoutItem.height }}
                 position={{ x: layoutItem.x, y: layoutItem.y }}
+                scale={zoom}
                 onDragStop={(e, d) => this.onDragStop(fig.id, d)}
                 onResizeStop={(e, direction, ref, delta, position) =>
                   this.onResizeStop(fig.id, ref, position)
                 }
-                bounds="parent"
                 dragHandleClassName="drag-handle"
                 enableResizing={{
                   top: true,

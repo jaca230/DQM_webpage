@@ -3,6 +3,7 @@
     {
       "id": "tab-overview",
       "name": "Overview",
+      "defaultZoom": 1,
       "figures": [
         {
           "type": "Label",
@@ -110,6 +111,7 @@
     {
       "id": "tab-visualizations",
       "name": "Visualization Ideas",
+      "defaultZoom": 1,
       "figures": [
         {
           "type": "Label",

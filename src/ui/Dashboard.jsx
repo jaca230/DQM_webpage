@@ -433,6 +433,20 @@ handleLoadingTimeout = () => {
     }
   };
 
+  handleZoomChange = (nextZoom) => {
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) return;
+
+    const value = Number(nextZoom);
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 5;
+    const normalizedZoom = Number.isFinite(value)
+      ? Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+      : 1;
+
+    this.tabManager.updateActiveTab({ zoom: normalizedZoom });
+  };
+
   handleClearPlugins = () => {
     if (window.confirm(
       'Are you sure you want to clear all plugins? Figures from these plugins will remain available until you refresh the page.'
@@ -488,6 +502,7 @@ handleLoadingTimeout = () => {
 
     // Normal dashboard UI below
     const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
+    const activeTabZoom = activeTab?.zoom ?? activeTab?.defaultZoom ?? 1;
     const figureFactory = this.factoryManager.get('figures');
     const figureTypes = this.registryManager.get('figures').getAll();
 
@@ -526,6 +541,8 @@ handleLoadingTimeout = () => {
             syncMode={syncMode}
             onSyncModeChange={this.handleSyncModeChange}
             dataManager={this.dataFetchManager}
+            zoom={activeTabZoom}
+            onZoomChange={this.handleZoomChange}
           />
           <FigureGrid
             figures={activeTab?.figures || []}
@@ -538,6 +555,7 @@ handleLoadingTimeout = () => {
             sidebarCollapsed={sidebarCollapsed}
             dataManager={this.dataFetchManager}
             onDuplicateFigure={this.handleDuplicateFigure}
+            zoom={activeTabZoom}
           />
         </div>
       </div>

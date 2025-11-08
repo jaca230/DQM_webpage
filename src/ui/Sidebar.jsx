@@ -105,7 +105,9 @@ class Sidebar extends React.Component {
       tabs = [], 
       activeTabId, 
       activeFigureId,
-      syncMode = true
+      syncMode = true,
+      zoom = 1,
+      onZoomChange = () => {}
     } = this.props;
     const {
       selectedFigureType,
@@ -115,6 +117,15 @@ class Sidebar extends React.Component {
       showPluginManagementModal,
       showLayoutManagementModal,
     } = this.state;
+
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 5;
+    const currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, typeof zoom === 'number' ? zoom : 1));
+    const defaultZoomValue = Math.min(
+      MAX_ZOOM,
+      Math.max(MIN_ZOOM, typeof activeTab?.defaultZoom === 'number' ? activeTab.defaultZoom : 1)
+    );
 
     const options = figureTypes.map(([name, cls]) => ({
       value: name,
@@ -215,6 +226,136 @@ class Sidebar extends React.Component {
               >
                 Add Figure
               </button>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <h3>Canvas Zoom</h3>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '0.5rem',
+              }}>
+                <button
+                  onClick={() => onZoomChange(Math.max(MIN_ZOOM, +(currentZoom - 0.1).toFixed(2)))}
+                  disabled={currentZoom <= MIN_ZOOM}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: currentZoom <= MIN_ZOOM ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    opacity: currentZoom <= MIN_ZOOM ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentZoom > MIN_ZOOM) {
+                      e.target.style.background = '#111827';
+                      e.target.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  −
+                </button>
+                <input
+                  type="range"
+                  min={20}
+                  max={500}
+                  value={Math.round(currentZoom * 100)}
+                  onChange={(e) => {
+                    const sliderValue = parseInt(e.target.value, 10);
+                    if (Number.isNaN(sliderValue)) {
+                      return;
+                    }
+                    onZoomChange(
+                      Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, sliderValue / 100))
+                    );
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    accentColor: '#111827',
+                  }}
+                />
+                <button
+                  onClick={() => onZoomChange(Math.min(MAX_ZOOM, +(currentZoom + 0.1).toFixed(2)))}
+                  disabled={currentZoom >= MAX_ZOOM}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: currentZoom >= MAX_ZOOM ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    opacity: currentZoom >= MAX_ZOOM ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentZoom < MAX_ZOOM) {
+                      e.target.style.background = '#111827';
+                      e.target.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+              }}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#6b7280',
+                  fontWeight: 500,
+                }}>
+                  {Math.round(currentZoom * 100)}%
+                </div>
+                <button
+                  onClick={() => onZoomChange(defaultZoomValue)}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 4,
+                    border: '1px solid #111827',
+                    background: '#fff',
+                    color: '#111827',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    lineHeight: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#111827';
+                    e.target.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                    e.target.style.color = '#111827';
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
