@@ -17,9 +17,16 @@ export default class FigureTile extends React.Component {
       this.state.showMenu &&
       prevProps.settings !== this.props.settings
     ) {
-      this.setState({ tempSettings: { ...this.props.settings } });
+      this.setState({ tempSettings: this.settingsWithDefaults() });
     }
   }
+
+  settingsWithDefaults = () => ({
+    ...Object.fromEntries(
+      Object.entries(this.props.schema || {}).map(([key, metadata]) => [key, metadata.default])
+    ),
+    ...this.props.settings,
+  });
 
   toggleMenu = (e) => {
     e.stopPropagation();
@@ -27,7 +34,7 @@ export default class FigureTile extends React.Component {
     this.props.onBringToFront?.();
     this.setState((prev) => {
       if (!prev.showMenu) {
-        return { showMenu: true, tempSettings: { ...this.props.settings } };
+        return { showMenu: true, tempSettings: this.settingsWithDefaults() };
       } else {
         return { showMenu: false, tempSettings: null };
       }

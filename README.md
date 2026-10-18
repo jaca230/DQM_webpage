@@ -1,9 +1,7 @@
 # DQM Webpage Frontend
 
-[ **Live Demo on GitHub Pages** ](https://jaca230.github.io/DQM_webpage/)
-
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![React Version](https://img.shields.io/badge/react-18.2.0-blue)](https://reactjs.org/)
+[![React Version](https://img.shields.io/badge/react-19.1.0-blue)](https://react.dev/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E=16.0.0-green)](https://nodejs.org/)
 [![NPM Version](https://img.shields.io/badge/npm-%3E=8.0.0-orange)](https://www.npmjs.com/)
 
@@ -12,7 +10,8 @@
 The **DQM Webpage Frontend** is a React-based dashboard for **dynamic data quality monitoring (DQM)**.
 It supports plugin-based figures (plots, tables, labels, etc.), tabbed layouts, and persistent configurations.
 
-The frontend connects to backend APIs (e.g. [ZMQSUB-to-FastAPI](https://github.com/jaca230/ZMQSUB_to_FastAPI)) to display live experiment data.
+The frontend connects to the `dqm_gateway` HTTP API to display selected live
+products without sending every product to every browser.
 
 ---
 
@@ -23,8 +22,8 @@ The frontend connects to backend APIs (e.g. [ZMQSUB-to-FastAPI](https://github.c
 git clone https://github.com/jaca230/DQM_webpage.git
 cd DQM_webpage/frontend
 
-# Install dependencies
-npm install
+# Install the locked dependencies
+npm ci
 
 # Run development server
 npm start
@@ -38,7 +37,184 @@ For production builds:
 npm run build
 ```
 
----
+Run the tests with:
+
+```bash
+CI=true npm test -- --runInBand
+```
+
+## MIDAS custom page
+
+The production React bundle can be served directly by `mhttpd`; no second
+frontend web server is required. The page appears as **DQM** in the MIDAS menu,
+uses the normal MIDAS header/navigation, and continues to request bounded views
+from `dqm_gateway`.
+
+Build and register the page in an existing experiment:
+
+```sh
+export MIDASSYS=/home/jack/software/midas
+export MIDAS_EXPTAB=/path/to/exptab
+
+./scripts/midas/build_custom_page.sh
+./scripts/midas/configure_custom_page.sh EXPERIMENT_NAME \
+  http://127.0.0.1:8080
+```
+
+The configuration command creates:
+
+```text
+/Custom/Path  = <this repository>/build
+/Custom/DQM&  = index.html
+```
+
+`/Custom/Path` is shared by every MIDAS custom page. If an experiment already
+uses a different directory, copy or symlink this build into that directory
+instead of replacing the established path.
+
+Launch `mhttpd` in the foreground on port 8081:
+
+```sh
+./scripts/midas/run_mhttpd.sh EXPERIMENT_NAME 8081
+```
+
+Open [http://127.0.0.1:8081/DQM](http://127.0.0.1:8081/DQM). For a remote
+browser, pass the externally reachable gateway URL to the configuration script;
+the browser must not be configured with `127.0.0.1` unless it runs on the DAQ
+host. Add the corresponding `mhttpd` origin, such as
+`http://daq-host:8081`, to the gateway's exact `allowed-origins` list.
+
+For the existing full detector demo, use four terminals:
+
+```sh
+# Terminal 0: isolated MIDAS experiment, acquisition, and four frontends
+cd /home/jack/cpp_projects/midas_stuff/midas_publisher
+python3 benchmarks/rate_tests/run_midas_demo.py
+
+# Terminal 1: publisher and publisher-owned Gaudi sidecar
+cd /home/jack/cpp_projects/midas_stuff/midas_publisher
+source .artifacts/midas-demo/environment.sh
+./build-rate-tests/bin/zmq_publisher \
+  --config .artifacts/midas-demo/publisher_config.json
+
+# Terminal 2: gateway with the mhttpd origin added to CORS
+cd /home/jack/large_projects/DQM_webpage/frontend
+python3 benchmarks/web_clients/make_gateway_benchmark_config.py \
+  /home/jack/cpp_projects/dqm_gateway/config/config.json \
+  .artifacts/midas-gateway.json \
+  --port 8080 --threads 2 \
+  --mhttpd-origin http://127.0.0.1:8081 \
+  --preserve-rate-limits
+cd /home/jack/cpp_projects/dqm_gateway
+./scripts/run.sh \
+  /home/jack/large_projects/DQM_webpage/frontend/.artifacts/midas-gateway.json
+
+# Terminal 3: register and run the MIDAS-hosted dashboard
+cd /home/jack/large_projects/DQM_webpage/frontend
+source /home/jack/cpp_projects/midas_stuff/midas_publisher/.artifacts/midas-demo/environment.sh
+./scripts/midas/build_custom_page.sh
+./scripts/midas/configure_custom_page.sh "$MIDAS_EXPT_NAME" http://127.0.0.1:8080
+./scripts/midas/run_mhttpd.sh "$MIDAS_EXPT_NAME" 8081 --no-hostlist
+```
+
+For a local-only test where MIDAS host access control has not been configured:
+
+```sh
+./scripts/midas/run_mhttpd.sh EXPERIMENT_NAME 8081 --no-hostlist
+```
+
+Do not use `--no-hostlist` on an exposed DAQ network.
+
+## Web-client benchmark
+
+The benchmark discovers real waveform, hit-series, and histogram selections
+from the gateway catalog. It measures concurrent cold loads of the `mhttpd`
+page and continuous polling by virtual dashboard clients. Reports are replaced
+in `.artifacts/web-client-benchmark/latest` so test runs do not accumulate.
+It measures HTTP serving and update delivery, not browser Plotly rendering or
+GPU performance; use it to size `mhttpd` and the gateway independently of a
+particular operator workstation.
+
+With the full pipeline, gateway, and `mhttpd` running:
+
+```sh
+python3 benchmarks/web_clients/run_benchmark.py \
+  --gateway-url http://127.0.0.1:8080 \
+  --mhttpd-url http://127.0.0.1:8081/DQM \
+  --clients 1 2 4 8 16 32 \
+  --poll-intervals 2 1 0.5 \
+  --duration 10
+```
+
+The production gateway deliberately rate-limits each source IP. Local virtual
+clients all share one IP, so HTTP 429 responses show where that safety policy
+engages, not the server's raw capacity. To measure capacity separately, create
+an isolated high-limit configuration on port 8082:
+
+```sh
+python3 benchmarks/web_clients/make_gateway_benchmark_config.py \
+  /home/jack/cpp_projects/dqm_gateway/config/config.json \
+  .artifacts/web-client-benchmark/gateway-config.json
+
+/home/jack/cpp_projects/dqm_gateway/build/bin/dqm_gateway \
+  --config .artifacts/web-client-benchmark/gateway-config.json
+
+python3 benchmarks/web_clients/run_benchmark.py \
+  --gateway-url http://127.0.0.1:8082 \
+  --mhttpd-url http://127.0.0.1:8081/DQM
+```
+
+The high-limit configuration is a benchmark fixture only. Keep the production
+throttles enabled for actual clients.
+
+## Built-in detector waveforms
+
+SAMPIC, HDSoC, and WFD5 waveform figures are built into the frontend
+while their online interfaces are being developed. The default Detector
+Overview contains those three traces and a separate MuSiP
+hit-energy-versus-time scatter plot because MuSiP produces hits, not sampled
+waveforms. The default layout queries the local DQM gateway's `/waveforms` and
+`/hit-series` endpoints. There is no browser-side simulated fallback: before
+the first valid response, an unavailable selection reports that no live data
+was found.
+
+Layouts saved by an older checkout take precedence over the default. Use
+**Manage layout → Reset to default** once if the Detector Overview is not
+visible.
+
+The preferred payload is detector-independent:
+
+```json
+{
+  "detector": "sampic",
+  "waveforms": [
+    {
+      "module": 0,
+      "submodule": 0,
+      "channel": 3,
+      "samples": [12, 13, 18, 42]
+    }
+  ]
+}
+```
+
+The adapter also accepts the existing WFD5 `data.arr[].trace` representation.
+Detector coordinates, channel, maximum returned samples, and polling interval
+are configurable per figure. SAMPIC exposes crate/FEB/chip/channel, WFD5
+exposes crate/AMC/channel, and HDSoC exposes board/channel. MuSiP's bounded
+hit-series endpoint exposes producer group/channel and explicit hit times.
+
+## Built-in histograms
+
+The **Live Histogram** figure reads a named histogram from the runtime-configured
+gateway `/api/v1/histograms` endpoint and requests only the configured
+maximum number of bins. The default Pulse Integrals tab contains the SAMPIC,
+HDSoC, WFD5, and MuSiP integral histograms produced by the online Gaudi job.
+It displays `No live histogram found` when the gateway has no matching data.
+Reset a previously saved layout to the default once to add this new tab.
+Histogram figures independently support linear or logarithmic energy and count
+axes. All live plots retain the last valid response if a later request is empty
+or unavailable and can display either its client-observed age or timestamp.
 
 ## Documentation
 
@@ -52,10 +228,6 @@ Full documentation, including:
 
 See the [Wiki](https://github.com/jaca230/DQM_webpage/wiki)
 
----
-
 ## License
 
 MIT License — see [LICENSE](LICENSE).
-
----

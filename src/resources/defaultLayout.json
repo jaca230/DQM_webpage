@@ -1,203 +1,206 @@
 {
   "tabs": [
     {
-      "id": "tab-overview",
-      "name": "Overview",
+      "id": "tab-detector-overview",
+      "name": "Detector Overview",
       "defaultZoom": 1,
       "figures": [
         {
           "type": "Label",
-          "id": "overview-notes",
-          "title": "Getting Started",
+          "id": "detector-overview-help",
+          "title": "Online Waveforms",
           "settings": {
-            "text": "Welcome! This workspace runs entirely in the browser so you can explore layouts without wiring a backend.\\n\\nTips:\\n• Drag/resize tiles, or duplicate them with the copy icon.\\n• Click the settings gear on any widget to adjust refresh timing, colors, or copy text.\\n• Use the sidebar to add/remove figures, import/export layouts, and load plugin bundles.",
-            "fontSize": 20,
-            "fontWeight": "600",
+            "text": "Live sampled waveforms for SAMPIC, HDSoC, and WFD5 plus MuSiP hit energy versus time. Displays retain their last valid data and report its age.",
+            "fontSize": 17,
+            "fontWeight": "500",
             "textAlign": "left",
             "color": "rgba(15,23,42,1)",
-            "backgroundColor": "rgba(191,219,254,0.7)",
-            "padding": 24,
-            "borderRadius": 18,
-            "border": "1px solid rgba(59,130,246,0.45)"
+            "backgroundColor": "rgba(239,246,255,1)",
+            "padding": 18,
+            "borderRadius": 8,
+            "border": "1px solid rgba(147,197,253,1)"
           }
         },
         {
-          "type": "BeamIntensityPlot",
-          "id": "overview-ticker",
-          "title": "Ticker Plot",
+          "type": "SampicWaveformPlot",
+          "id": "waveform-sampic",
+          "title": "SAMPIC Waveform",
           "settings": {
-            "amplitude": 1.3,
-            "jitter": 0.16,
-            "harmonics": 4,
-            "updateFrequency": 0.4,
-            "dataUrl": "None"
-          }
-        },
-        {
-          "type": "EventRateGauge",
-          "id": "overview-gauge",
-          "title": "Event Rate",
-          "settings": {
-            "targetRate": 250,
-            "maxRate": 330,
+            "channel": 0,
+            "crate": 0,
+            "feb": 0,
+            "chip": 0,
+            "maximumSamples": 256,
             "updateFrequency": 0.5,
-            "dataUrl": "None"
+            "dataUrl": "/api/v1/waveforms"
           }
         },
         {
-          "type": "ChannelRateBars",
-          "id": "overview-bars",
-          "title": "Channel Rate Monitor",
+          "type": "HdSocWaveformPlot",
+          "id": "waveform-hdsoc",
+          "title": "HDSoC Waveform",
           "settings": {
-            "highlightedChannel": "B1",
-            "updateFrequency": 0.9,
-            "dataUrl": "None"
+            "channel": 0,
+            "board": 0,
+            "maximumSamples": 256,
+            "updateFrequency": 0.5,
+            "dataUrl": "/api/v1/waveforms"
           }
         },
         {
-          "type": "RunStatusTable",
-          "id": "overview-status",
-          "title": "Subsystem Status",
+          "type": "Wfd5WaveformPlot",
+          "id": "waveform-wfd5",
+          "title": "WFD5 Waveform",
           "settings": {
-            "maxRows": 6,
-            "updateFrequency": 1.2,
-            "dataUrl": "None"
+            "channel": 1,
+            "crate": 0,
+            "amc": 1,
+            "maximumSamples": 512,
+            "updateFrequency": 0.5,
+            "dataUrl": "/api/v1/waveforms"
+          }
+        },
+        {
+          "type": "MuSipHitPlot",
+          "id": "hits-musip",
+          "title": "MuSiP Hit Energy vs Time",
+          "settings": {
+            "channel": 0,
+            "group": 0,
+            "maximumHits": 256,
+            "updateFrequency": 0.5,
+            "dataUrl": "/api/v1/hit-series"
           }
         }
       ],
       "layout": [
         {
-          "id": "overview-notes",
+          "id": "detector-overview-help",
           "x": 20,
           "y": 20,
-          "width": 820,
-          "height": 220,
+          "width": 1160,
+          "height": 150,
           "zIndex": 5
         },
         {
-          "id": "overview-ticker",
+          "id": "waveform-sampic",
           "x": 20,
-          "y": 260,
-          "width": 880,
-          "height": 360,
+          "y": 190,
+          "width": 570,
+          "height": 350,
           "zIndex": 4
         },
         {
-          "id": "overview-gauge",
-          "x": 920,
-          "y": 20,
-          "width": 300,
-          "height": 320,
+          "id": "waveform-hdsoc",
+          "x": 610,
+          "y": 190,
+          "width": 570,
+          "height": 350,
           "zIndex": 3
         },
         {
-          "id": "overview-bars",
-          "x": 920,
-          "y": 360,
-          "width": 300,
-          "height": 260,
+          "id": "waveform-wfd5",
+          "x": 20,
+          "y": 560,
+          "width": 570,
+          "height": 350,
           "zIndex": 2
         },
         {
-          "id": "overview-status",
-          "x": 20,
-          "y": 640,
-          "width": 700,
-          "height": 300,
+          "id": "hits-musip",
+          "x": 610,
+          "y": 560,
+          "width": 570,
+          "height": 350,
           "zIndex": 1
         }
       ]
     },
     {
-      "id": "tab-visualizations",
-      "name": "Visualization Ideas",
+      "id": "tab-pulse-integrals",
+      "name": "Pulse Integrals",
       "defaultZoom": 1,
       "figures": [
         {
-          "type": "Label",
-          "id": "visual-notes",
-          "title": "What To Try",
+          "type": "HistogramPlot",
+          "id": "histogram-sampic-integral",
+          "title": "SAMPIC Pulse Integral",
           "settings": {
-            "text": "This tab highlights patterns you can build into your own plugins.\\n• The oscilloscope widget loops through sample buffers for multiple channels.\\n• The histogram continually grows as new samples stream in.\\n• The contour plot is great for profiles or occupancy maps.\\nDuplicate any widget and wire it to real data to prototype quickly.",
-            "fontSize": 19,
-            "textAlign": "left",
-            "color": "rgba(4,47,46,1)",
-            "backgroundColor": "rgba(16,185,129,0.22)",
-            "padding": 22,
-            "borderRadius": 16,
-            "border": "1px dashed rgba(5,150,105,0.6)"
-          }
-        },
-        {
-          "type": "OscilloscopeTracePlot",
-          "id": "visual-scope",
-          "title": "Oscilloscope Traces",
-          "settings": {
-            "channelCount": 3,
-            "sampleCount": 220,
-            "updateFrequency": 0.4,
-            "dataUrl": "None"
-          }
-        },
-        {
-          "type": "EnergySpectrumHistogram",
-          "id": "visual-histogram",
-          "title": "Updating Histogram",
-          "settings": {
-            "meanEnergy": 4.5,
-            "spread": 1.3,
+            "histogramName": "PulseIntegrals/sampic_pulse_integral",
+            "maximumBins": 200,
             "updateFrequency": 1,
-            "dataUrl": "None"
+            "dataUrl": "/api/v1/histograms"
           }
         },
         {
-          "type": "BeamProfileHistogram",
-          "id": "visual-profile",
-          "title": "Beam Profile",
+          "type": "HistogramPlot",
+          "id": "histogram-hdsoc-integral",
+          "title": "HDSoC Pulse Integral",
           "settings": {
-            "sigmaX": 6,
-            "sigmaY": 3.5,
-            "rotation": 10,
-            "updateFrequency": 0.7,
-            "dataUrl": "None"
+            "histogramName": "PulseIntegrals/hdsoc_pulse_integral",
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        },
+        {
+          "type": "HistogramPlot",
+          "id": "histogram-wfd5-integral",
+          "title": "WFD5 Pulse Integral",
+          "settings": {
+            "histogramName": "PulseIntegrals/wfd5_pulse_integral",
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        },
+        {
+          "type": "HistogramPlot",
+          "id": "histogram-musip-integral",
+          "title": "MuSiP Pulse Integral",
+          "settings": {
+            "histogramName": "PulseIntegrals/musip_pulse_integral",
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
           }
         }
       ],
       "layout": [
         {
-          "id": "visual-notes",
+          "id": "histogram-sampic-integral",
           "x": 20,
           "y": 20,
-          "width": 740,
-          "height": 200,
-          "zIndex": 5
-        },
-        {
-          "id": "visual-scope",
-          "x": 20,
-          "y": 240,
-          "width": 780,
-          "height": 360,
+          "width": 570,
+          "height": 350,
           "zIndex": 4
         },
         {
-          "id": "visual-histogram",
-          "x": 820,
-          "y": 240,
-          "width": 360,
-          "height": 360,
+          "id": "histogram-hdsoc-integral",
+          "x": 610,
+          "y": 20,
+          "width": 570,
+          "height": 350,
           "zIndex": 3
         },
         {
-          "id": "visual-profile",
+          "id": "histogram-wfd5-integral",
           "x": 20,
-          "y": 620,
-          "width": 660,
-          "height": 320,
+          "y": 390,
+          "width": 570,
+          "height": 350,
           "zIndex": 2
+        },
+        {
+          "id": "histogram-musip-integral",
+          "x": 610,
+          "y": 390,
+          "width": 570,
+          "height": 350,
+          "zIndex": 1
         }
       ]
     }
   ],
-  "activeTabId": "tab-overview"
+  "activeTabId": "tab-detector-overview"
 }

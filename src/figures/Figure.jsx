@@ -20,9 +20,20 @@ export default class Figure extends BaseFigure {
       updateFrequency: {
         type: SettingTypes.NUMBER,
         default: 2,
-        label: 'Update Interval (s)',
+        label: 'Polling interval (s)',
         onChange: 'onUpdateFrequencyChange',
         advanced: false,
+      },
+      lastUpdatedDisplay: {
+        type: SettingTypes.SELECT,
+        default: 'age',
+        label: 'Last updated',
+        options: [
+          { value: 'age', label: 'Time since update' },
+          { value: 'timestamp', label: 'Timestamp' },
+          { value: 'hidden', label: 'Hidden' },
+        ],
+        advanced: true,
       },
     };
   }
@@ -35,6 +46,9 @@ export default class Figure extends BaseFigure {
     this.state = {
       loading: true,
       error: null,
+      lastDataAt: null,
+      lastDataVersion: null,
+      freshnessNow: Date.now(),
     };
 
     this.strategy = null;
@@ -259,6 +273,44 @@ export default class Figure extends BaseFigure {
     } else {
       dataManager.forceFetchMultiple(urls);
     }
+  }
+
+  dataVersion(data) {
+    if (!data || typeof data !== 'object') return null;
+    if (data.sequence !== undefined) return `${data.epoch || ''}:${data.sequence}`;
+    for (const key of ['waveforms', 'hit-series', 'histograms']) {
+      if (!Array.isArray(data[key])) continue;
+      const versions = data[key]
+        .map((item) => item?.sequence)
+        .filter((sequence) => sequence !== undefined);
+      if (versions.length) return `${data.epoch || ''}:${versions.join(',')}`;
+    }
+    return null;
+  }
+
+  freshnessState(data) {
+    const now = Date.now();
+    const version = this.dataVersion(data);
+    const changed = version === null || version !== this.state.lastDataVersion;
+    return {
+      lastDataAt: changed ? now : this.state.lastDataAt,
+      lastDataVersion: changed ? version : this.state.lastDataVersion,
+      freshnessNow: now,
+    };
+  }
+
+  renderFreshness() {
+    const { lastDataAt, freshnessNow } = this.state;
+    const mode = this.settings.lastUpdatedDisplay;
+    if (!lastDataAt || mode === 'hidden') return null;
+    let text;
+    if (mode === 'timestamp') {
+      text = `Updated ${new Date(lastDataAt).toLocaleTimeString()}`;
+    } else {
+      const seconds = Math.max(0, Math.floor((freshnessNow - lastDataAt) / 1000));
+      text = seconds < 2 ? 'Updated just now' : `Updated ${seconds}s ago`;
+    }
+    return <div className="figure-freshness">{text}</div>;
   }
 
   render() {

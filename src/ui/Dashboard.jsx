@@ -564,7 +564,7 @@ handleLoadingTimeout = () => {
     );
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <main className="dashboard">
         <TabsBar
           tabs={tabs}
           activeTabId={activeTabId}
@@ -644,7 +644,7 @@ handleLoadingTimeout = () => {
             isMobileView={isMobileView}
           />
         </div>
-      </div>
+      </main>
     );
   }
 }

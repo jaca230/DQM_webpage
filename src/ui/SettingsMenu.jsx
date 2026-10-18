@@ -1,371 +1,53 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Sliders } from 'lucide-react';
-import SettingTypes from '../enums/SettingTypes.js'; // adjust path if needed
+import SettingField from './forms/SettingField';
 
-export default function SettingsMenu({
-  settings = { brightness: '100', contrast: '50', saturation: '75' },
-  schema = {},
-  onChange = () => {},
-  onApply = () => {},
-  onDelete = () => {},
-}) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+export default class SettingsMenu extends React.Component {
+  state = { showAdvanced: false };
 
-  const filteredSettings = Object.entries(settings).filter(([key]) => {
-    const meta = schema[key] || {};
-    return meta.advanced ? showAdvanced : true;
-  });
+  render() {
+    const {
+      settings = {},
+      schema = {},
+      onChange = () => {},
+      onApply = () => {},
+      onDelete = () => {},
+    } = this.props;
+    const hasAdvanced = Object.values(schema).some((metadata) => metadata.advanced);
+    const visibleSettings = Object.entries(settings).filter(([key]) => (
+      !schema[key]?.advanced || this.state.showAdvanced
+    ));
 
-  return (
-    <div
-      className="no-drag"
-      style={{
-        position: 'absolute',
-        top: '2.5rem',
-        left: '0.5rem',
-        zIndex: 10,
-        background: 'rgba(255, 255, 255, 0.005)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        padding: '0.75rem',
-        borderRadius: '16px',
-        minWidth: '200px',
-        minHeight: '200px',
-        maxWidth: '90vw',
-        maxHeight: '90vh',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 16px rgba(0, 0, 0, 0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        resize: 'both',
-        overflow: 'hidden',
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          marginBottom: '0.75rem',
-          paddingRight: '4px', // Account for scrollbar
-        }}
-      >
-        {filteredSettings.map(([key, val]) => {
-          const meta = schema[key] || {};
-          const label = meta.label || key;
+    return (
+      <aside className="figure-settings no-drag" onClick={(event) => event.stopPropagation()}>
+        <div className="figure-settings-fields">
+          {visibleSettings.map(([key, value]) => (
+            <SettingField
+              key={key}
+              name={key}
+              value={value}
+              metadata={schema[key] || {}}
+              onChange={onChange}
+            />
+          ))}
+        </div>
 
-          let inputElement;
+        {hasAdvanced && (
+          <button
+            className="button button-secondary figure-settings-advanced"
+            type="button"
+            onClick={() => this.setState((state) => ({ showAdvanced: !state.showAdvanced }))}
+          >
+            <Sliders size={15} />
+            {this.state.showAdvanced ? 'Hide advanced' : 'Show advanced'}
+          </button>
+        )}
 
-          switch (meta.type) {
-            case SettingTypes.COLOR:
-              inputElement = (
-                <input
-                  id={`setting-${key}`}
-                  type="text"
-                  value={val}
-                  placeholder="rgba(0,0,0,1)"
-                  onChange={(e) => onChange(key, e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: '3px solid rgba(0, 0, 0, 0.4)',
-                    fontSize: '0.85rem',
-                    boxSizing: 'border-box',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    color: 'rgba(0, 0, 0, 0.95)',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    boxShadow:
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 123, 255, 0.9)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.98)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow =
-                      '0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 0, 0, 0.4)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow =
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  }}
-                />
-              );
-              break;
-
-            case SettingTypes.NUMBER:
-              inputElement = (
-                <input
-                  id={`setting-${key}`}
-                  type="number"
-                  value={val}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    onChange(key, isNaN(v) ? '' : v);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: '3px solid rgba(0, 0, 0, 0.4)',
-                    fontSize: '0.85rem',
-                    boxSizing: 'border-box',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    color: 'rgba(0, 0, 0, 0.95)',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    boxShadow:
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 123, 255, 0.9)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.98)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow =
-                      '0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 0, 0, 0.4)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow =
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  }}
-                />
-              );
-              break;
-
-            case SettingTypes.INT:
-              inputElement = (
-                <input
-                  id={`setting-${key}`}
-                  type="number"
-                  value={val}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    onChange(key, isNaN(v) ? '' : v);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: '3px solid rgba(0, 0, 0, 0.4)',
-                    fontSize: '0.85rem',
-                    boxSizing: 'border-box',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    color: 'rgba(0, 0, 0, 0.95)',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    boxShadow:
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 123, 255, 0.9)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.98)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow =
-                      '0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 0, 0, 0.4)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow =
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  }}
-                />
-              );
-              break;
-
-            case SettingTypes.BOOLEAN:
-              inputElement = (
-                <input
-                  id={`setting-${key}`}
-                  type="checkbox"
-                  checked={Boolean(val)}
-                  onChange={(e) => onChange(key, e.target.checked)}
-                  style={{ transform: 'scale(1.2)' }}
-                />
-              );
-              break;
-
-            case SettingTypes.STRING:
-            case SettingTypes.ARRAY:
-            case SettingTypes.OBJECT:
-            default:
-              inputElement = (
-                <input
-                  id={`setting-${key}`}
-                  type="text"
-                  value={val}
-                  onChange={(e) => onChange(key, e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: '3px solid rgba(0, 0, 0, 0.4)',
-                    fontSize: '0.85rem',
-                    boxSizing: 'border-box',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    color: 'rgba(0, 0, 0, 0.95)',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    boxShadow:
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 123, 255, 0.9)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.98)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow =
-                      '0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '3px solid rgba(0, 0, 0, 0.4)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow =
-                      '0 3px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  }}
-                />
-              );
-          }
-
-          return (
-            <div key={key} style={{ marginBottom: '0.75rem' }}>
-              <label
-                htmlFor={`setting-${key}`}
-                style={{
-                  fontSize: '0.8rem',
-                  display: 'block',
-                  marginBottom: '4px',
-                  color: 'rgba(0, 0, 0, 0.9)',
-                  fontWeight: '600',
-                  textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
-                }}
-              >
-                {label}
-              </label>
-              {inputElement}
-            </div>
-          );
-        })}
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '6px',
-        }}
-      >
-        <button
-          onClick={onApply}
-          style={{
-            padding: '6px 12px',
-            cursor: 'pointer',
-            borderRadius: '8px',
-            border: '1px solid rgba(0, 123, 255, 0.3)',
-            background: 'rgba(0, 123, 255, 0.8)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: '0.8rem',
-            transition: 'all 0.2s ease',
-            outline: 'none',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(0, 123, 255, 0.9)';
-            e.target.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(0, 123, 255, 0.8)';
-            e.target.style.transform = 'translateY(0)';
-          }}
-          type="button"
-        >
-          Apply
-        </button>
-        <button
-          onClick={onDelete}
-          style={{
-            color: 'rgba(220, 53, 69, 0.9)',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            borderRadius: '8px',
-            border: '1px solid rgba(220, 53, 69, 0.2)',
-            background: 'rgba(220, 53, 69, 0.1)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            fontWeight: '500',
-            fontSize: '0.8rem',
-            transition: 'all 0.2s ease',
-            outline: 'none',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(220, 53, 69, 0.2)';
-            e.target.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(220, 53, 69, 0.1)';
-            e.target.style.transform = 'translateY(0)';
-          }}
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-
-      <button
-        onClick={() => setShowAdvanced((v) => !v)}
-        style={{
-          marginTop: '0.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          justifyContent: 'center',
-          background: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '8px',
-          color: 'rgba(0, 123, 255, 0.9)',
-          fontSize: '0.85rem',
-          cursor: 'pointer',
-          userSelect: 'none',
-          padding: '8px 12px',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          transition: 'all 0.2s ease',
-          outline: 'none',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-          e.target.style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-          e.target.style.transform = 'translateY(0)';
-        }}
-        aria-pressed={showAdvanced}
-        aria-label="Toggle advanced settings visibility"
-        type="button"
-      >
-        <Sliders size={16} strokeWidth={2} />
-        {showAdvanced ? 'Hide advanced settings' : 'Show advanced settings'}
-      </button>
-    </div>
-  );
+        <div className="figure-settings-actions">
+          <button className="button button-danger" type="button" onClick={onDelete}>Delete</button>
+          <button className="button button-primary" type="button" onClick={onApply}>Apply</button>
+        </div>
+      </aside>
+    );
+  }
 }

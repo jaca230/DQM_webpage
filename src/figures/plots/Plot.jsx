@@ -1,4 +1,4 @@
-import Plotly from 'react-plotly.js';
+import Plotly from './PlotlyComponent';
 import Figure from '../Figure';
 
 export default class Plot extends Figure {
@@ -12,6 +12,9 @@ export default class Plot extends Figure {
       data: [],
       layout: {},
       revision: 0,
+      lastDataAt: null,
+      lastDataVersion: null,
+      freshnessNow: Date.now(),
     };
   }
 
@@ -46,10 +49,17 @@ export default class Plot extends Figure {
         plotLayout = result.layout || this.state.layout;
       }
 
+      const hasNewData = Array.isArray(plotData) && plotData.length > 0;
+      if (!hasNewData && this.state.data.length > 0) {
+        this.setState({ error: null, loading: false, freshnessNow: Date.now() });
+        return;
+      }
+
       this.setState(prev => ({
         data: plotData,
         layout: plotLayout,
         revision: prev.revision + 1,
+        ...(hasNewData ? this.freshnessState(data) : {}),
       }));
     } catch (err) {
       console.error('Error processing plot data:', err);
@@ -61,23 +71,26 @@ export default class Plot extends Figure {
 
   onDataError(error) {
     super.onDataError(error);
-    this.setState({
-      data: [],
-      layout: {},
-      revision: 0,
-    });
+    this.handleUnavailableData();
   }
 
   onMultiDataError(errorMap) {
     super.onMultiDataError(errorMap);
     // Show first error in the UI
     const firstError = Object.values(errorMap)[0];
-    this.setState({
-      error: firstError,
-      data: [],
-      layout: {},
-      revision: 0,
-    });
+    if (this.state.data.length) {
+      this.setState({ error: null, loading: false, freshnessNow: Date.now() });
+    } else {
+      this.setState({ error: firstError, loading: false });
+    }
+  }
+
+  handleUnavailableData() {
+    if (this.state.data.length) {
+      this.setState({ error: null, loading: false, freshnessNow: Date.now() });
+      return;
+    }
+    this.setState({ error: null, loading: false }, () => this._updatePlotInternal(null));
   }
 
   // Default implementations for subclasses to override
@@ -156,18 +169,21 @@ export default class Plot extends Figure {
     const { data, layout, revision } = this.state;
 
     return (
-      <div className="no-drag" style={{ width: '100%', height: '100%' }}>
-        <Plotly
-          data={data}
-          layout={layout}
-          revision={revision}
-          style={{ width: '100%', height: '100%' }}
-          useResizeHandler
-          config={{
-            responsive: true,
-            modeBarButtonsToRemove: ['select2d', 'lasso2d']
-          }}
-        />
+      <div className="no-drag plot-container">
+        <div className="plot-surface">
+          <Plotly
+            data={data}
+            layout={layout}
+            revision={revision}
+            style={{ width: '100%', height: '100%' }}
+            useResizeHandler
+            config={{
+              responsive: true,
+              modeBarButtonsToRemove: ['select2d', 'lasso2d']
+            }}
+          />
+        </div>
+        {this.renderFreshness()}
       </div>
     );
   }

@@ -6,6 +6,7 @@ const SettingTypes = Object.freeze({
   ARRAY: 'array',
   OBJECT: 'object',
   COLOR: 'color',
+  SELECT: 'select',
 });
 
 export default SettingTypes;

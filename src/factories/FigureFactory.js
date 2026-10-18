@@ -13,7 +13,6 @@ export default class FigureFactory extends Factory {
       return null;
     }
 
-    console.log('Found FigureClass:', FigureClass.name || FigureClass.displayName);
     return new FigureClass({ id, title, settings });
   }
 }

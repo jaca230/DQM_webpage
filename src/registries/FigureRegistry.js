@@ -12,13 +12,21 @@ export default class FigureRegistry extends Registry {
       'Figure.jsx',
       'Plot.jsx',
       'Table.jsx',
+      'DetectorWaveformPlot.jsx',
+      'WaveformDataAdapter.js',
     ];
 
     const ignoreDirs = [
       '/strategies/',   // skip all strategy classes
     ];
 
-    const context = require.context('../figures', true, /\.jsx?$/);
+    // Test modules use Jest globals such as `describe` and must never become
+    // browser-side registry candidates.
+    const context = require.context(
+      '../figures',
+      true,
+      /^(?!.*\.(?:test|spec)\.jsx?$).*\.jsx?$/
+    );
 
     context.keys().forEach((key) => {
       const filename = key.split('/').pop();

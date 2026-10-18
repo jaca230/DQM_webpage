@@ -1,7 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Plotly from 'react-plotly.js';
+import Plotly from './figures/plots/PlotlyComponent';
 
 import Dashboard from './ui/Dashboard';
 import initRegistries from './registries/init-registries';
@@ -48,8 +48,6 @@ class App extends React.Component {
     });
     this.setState({ registryManager, factoryManager, pluginLoader });
 
-    const figureRegistry = registryManager.get('figures');
-    console.log('Registered local figures:', figureRegistry.getNames());
   }
 
   render() {
@@ -60,8 +58,10 @@ class App extends React.Component {
     }
 
     return (
-      <div style={{ padding: '1rem' }}>
-        <h1>Data Quality Monitor</h1>
+      <div className="app-shell">
+        <header className="app-header">
+          <h1>Data Quality Monitor</h1>
+        </header>
         <Dashboard
           registryManager={registryManager}
           factoryManager={factoryManager}

@@ -38,6 +38,14 @@ export default class BaseFigure extends React.Component {
       case SettingTypes.STRING:
         return String(val);
 
+      case SettingTypes.SELECT: {
+        const value = String(val);
+        const options = meta.options || [];
+        return options.some((option) => (option.value ?? option) === value)
+          ? value
+          : meta.default;
+      }
+
       case SettingTypes.ARRAY: {
         if (typeof val === 'string' && meta.elementType === SettingTypes.COLOR) {
           // Use new parseColorArray function for robust parsing
@@ -150,7 +158,7 @@ export default class BaseFigure extends React.Component {
       return Boolean(raw) === Boolean(coerced);
     }
 
-    if (type === SettingTypes.COLOR || type === SettingTypes.STRING) {
+    if (type === SettingTypes.COLOR || type === SettingTypes.STRING || type === SettingTypes.SELECT) {
       return String(raw) === String(coerced);
     }
 
