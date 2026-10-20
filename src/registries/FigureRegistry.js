@@ -14,6 +14,9 @@ export default class FigureRegistry extends Registry {
       'Table.jsx',
       'DetectorWaveformPlot.jsx',
       'WaveformDataAdapter.js',
+      'AtarPlot.jsx',
+      'AtarChannelMapPlot.jsx',
+      'AtarHeatmapPlot.jsx',
     ];
 
     const ignoreDirs = [

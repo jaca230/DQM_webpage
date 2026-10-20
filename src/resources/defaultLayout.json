@@ -200,6 +200,53 @@
           "zIndex": 1
         }
       ]
+    },
+    {
+      "id": "tab-atar-channels",
+      "name": "ATAR Channels",
+      "defaultZoom": 1,
+      "figures": [
+        { "type": "AtarOccupancyPlot", "id": "atar-occupancy", "title": "ATAR Occupancy by Strip and Layer", "settings": { "updateFrequency": 1 } },
+        { "type": "AtarHitsPerEventPlot", "id": "atar-hits-per-event", "title": "Hits per Event", "settings": { "updateFrequency": 1 } },
+        { "type": "AtarBaselinePlot", "id": "atar-baseline", "title": "Baseline by Strip and Layer", "settings": { "updateFrequency": 2 } },
+        { "type": "AtarNoisePlot", "id": "atar-noise", "title": "Noise RMS by Strip and Layer", "settings": { "updateFrequency": 2 } }
+      ],
+      "layout": [
+        { "id": "atar-occupancy", "x": 20, "y": 20, "width": 570, "height": 350, "zIndex": 4 },
+        { "id": "atar-hits-per-event", "x": 610, "y": 20, "width": 570, "height": 350, "zIndex": 3 },
+        { "id": "atar-baseline", "x": 20, "y": 390, "width": 1160, "height": 380, "zIndex": 2 },
+        { "id": "atar-noise", "x": 20, "y": 790, "width": 1160, "height": 380, "zIndex": 1 }
+      ]
+    },
+    {
+      "id": "tab-atar-event",
+      "name": "ATAR Event",
+      "defaultZoom": 1,
+      "figures": [
+        { "type": "AtarWaveformsPlot", "id": "atar-waveforms", "title": "ATAR Waveforms", "settings": { "updateFrequency": 1 } },
+        { "type": "AtarHitPositionsPlot", "id": "atar-hit-positions", "title": "ATAR Hit Positions", "settings": { "updateFrequency": 1 } },
+        { "type": "AtarChargeDepthPlot", "id": "atar-charge-depth", "title": "ATAR Charge Deposit Depth", "settings": { "updateFrequency": 1 } }
+      ],
+      "layout": [
+        { "id": "atar-waveforms", "x": 20, "y": 20, "width": 1160, "height": 400, "zIndex": 3 },
+        { "id": "atar-hit-positions", "x": 20, "y": 440, "width": 570, "height": 370, "zIndex": 2 },
+        { "id": "atar-charge-depth", "x": 610, "y": 440, "width": 570, "height": 370, "zIndex": 1 }
+      ]
+    },
+    {
+      "id": "tab-atar-trends",
+      "name": "ATAR Trends",
+      "defaultZoom": 1,
+      "figures": [
+        { "type": "AtarPersistencePlot", "id": "atar-persistence", "title": "Persistence Waveform", "settings": { "updateFrequency": 2 } },
+        { "type": "AtarChargeVsAmplitudePlot", "id": "atar-charge-amplitude", "title": "Charge against Amplitude", "settings": { "updateFrequency": 2 } },
+        { "type": "AtarAmplitudeByChannelPlot", "id": "atar-amplitude-channel", "title": "Amplitude by Channel", "settings": { "updateFrequency": 2 } }
+      ],
+      "layout": [
+        { "id": "atar-persistence", "x": 20, "y": 20, "width": 570, "height": 380, "zIndex": 3 },
+        { "id": "atar-charge-amplitude", "x": 610, "y": 20, "width": 570, "height": 380, "zIndex": 2 },
+        { "id": "atar-amplitude-channel", "x": 20, "y": 420, "width": 1160, "height": 400, "zIndex": 1 }
+      ]
     }
   ],
   "activeTabId": "tab-detector-overview"

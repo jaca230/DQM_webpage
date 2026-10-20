@@ -212,6 +212,15 @@ or unavailable. Figure settings independently control the Gaudi product
 generation time and the browser fetch time as relative ages, timestamps, or
 hidden labels.
 
+## ATAR monitoring
+
+The default layout includes ATAR Channels, Event, and Trends tabs. Their ten
+figures correspond to the collaborator demonstrator views: occupancy,
+hits/event, baseline, noise, waveforms, hit positions, charge depth,
+persistence, charge against amplitude, and amplitude by channel. Each figure
+requests one bounded view from `/api/v1/atar`; the browser does not download the
+other accumulated ATAR products.
+
 ## Documentation
 
 Full documentation, including:

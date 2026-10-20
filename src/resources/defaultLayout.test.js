@@ -1,7 +1,7 @@
 import defaultLayout from './defaultLayout.json';
 
 describe('default layout', () => {
-  test('contains the detector waveforms and four pulse-integral histograms', () => {
+  test('contains detector, pulse-integral, and ATAR monitoring figures', () => {
     const figureTypes = defaultLayout.tabs.flatMap((tab) => (
       tab.figures.map((figure) => figure.type)
     ));
@@ -16,6 +16,16 @@ describe('default layout', () => {
       'HistogramPlot',
       'HistogramPlot',
       'HistogramPlot',
+      'AtarOccupancyPlot',
+      'AtarHitsPerEventPlot',
+      'AtarBaselinePlot',
+      'AtarNoisePlot',
+      'AtarWaveformsPlot',
+      'AtarHitPositionsPlot',
+      'AtarChargeDepthPlot',
+      'AtarPersistencePlot',
+      'AtarChargeVsAmplitudePlot',
+      'AtarAmplitudeByChannelPlot',
     ]);
     expect(defaultLayout.tabs.flatMap((tab) => tab.figures.map(({ id }) => id)))
       .toHaveLength(new Set(defaultLayout.tabs.flatMap((tab) => tab.figures.map(({ id }) => id))).size);
