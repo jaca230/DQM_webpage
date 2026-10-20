@@ -1,5 +1,6 @@
 import React from 'react';
 import FigureTile from './FigureTile';
+import FigureErrorBoundary from './FigureErrorBoundary';
 import { Rnd } from 'react-rnd';
 import 'react-resizable/css/styles.css';
 
@@ -434,16 +435,17 @@ class FigureGrid extends React.Component {
                   onDuplicate={() => onDuplicateFigure?.(fig.id)}
                 >
                   {FigureComponent ? (
-                    <FigureComponent
-                      key={fig.id}
-                      id={fig.id}
-                      title={fig.title}
-                      settings={fig.settings}
-                      dataManager={this.props.dataManager}
-                      onSettingsCorrected={(correctedSettings) =>
-                        this.updateFigureSettings(fig.id, correctedSettings)
-                      }
-                    />
+                    <FigureErrorBoundary key={`${fig.id}-${fig.type}`} figureId={fig.id}>
+                      <FigureComponent
+                        id={fig.id}
+                        title={fig.title}
+                        settings={fig.settings}
+                        dataManager={this.props.dataManager}
+                        onSettingsCorrected={(correctedSettings) =>
+                          this.updateFigureSettings(fig.id, correctedSettings)
+                        }
+                      />
+                    </FigureErrorBoundary>
                   ) : (
                     <div>Unknown figure type: {fig.type}</div>
                   )}

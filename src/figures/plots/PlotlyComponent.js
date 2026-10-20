@@ -1,11 +1,12 @@
 import createPlotlyComponent from 'react-plotly.js/factory';
 import PlotlyCore from 'plotly.js/lib/core';
 import Scatter from 'plotly.js/lib/scatter';
+import Bar from 'plotly.js/lib/bar';
+import Heatmap from 'plotly.js/lib/heatmap';
 
-// The built-in DQM waveform, hit, and histogram views are all represented as
-// scatter traces. Register only what the dashboard uses instead of shipping
+// Register the trace types used by the built-in DQM figures without shipping
 // the complete Plotly distribution (maps, 3D, finance, WebGL, and so on).
-PlotlyCore.register([Scatter]);
+PlotlyCore.register([Scatter, Bar, Heatmap]);
 
 const PlotlyComponent = createPlotlyComponent(PlotlyCore);
 

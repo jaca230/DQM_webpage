@@ -44,5 +44,5 @@ if [[ ! -d node_modules ]]; then
     npm ci
 fi
 
-PUBLIC_URL=/ npm run build
+GENERATE_SOURCEMAP=false PUBLIC_URL=/ npm run build
 echo "[build_custom_page] Built MIDAS custom page in $PROJECT_DIR/build"

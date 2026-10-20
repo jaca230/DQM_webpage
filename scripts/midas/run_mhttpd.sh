@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+PROJECT_DIR=$(realpath "$SCRIPT_DIR/../..")
+BUILD_DIR=${DQM_BUILD_DIR:-$PROJECT_DIR/build}
 EXPERIMENT=${MIDAS_EXPT_NAME:-${MIDAS_EXPERIMENT:-}}
 PORT=${MIDAS_HTTP_PORT:-8081}
 PAGE_NAME=${DQM_MIDAS_PAGE_NAME:-DQM}
@@ -15,6 +18,7 @@ Options:
   --experiment NAME   MIDAS experiment (default: MIDAS_EXPT_NAME)
   --port PORT         Local HTTP port (default: 8081)
   --page-name NAME    Custom-page name printed in the launch URL (default: DQM)
+  --build-dir PATH    Production frontend bundle (default: build/)
   --no-hostlist       Forward MIDAS's --no-hostlist option
   -h, --help          Display this help message
 EOF
@@ -32,6 +36,7 @@ while [[ $# -gt 0 ]]; do
         --experiment) require_value "$@"; EXPERIMENT=$2; shift 2 ;;
         --port) require_value "$@"; PORT=$2; shift 2 ;;
         --page-name) require_value "$@"; PAGE_NAME=$2; shift 2 ;;
+        --build-dir) require_value "$@"; BUILD_DIR=$2; shift 2 ;;
         --no-hostlist) MHTTPD_ARGS+=(--no-hostlist); shift ;;
         -h|--help) show_help; exit 0 ;;
         --) shift; MHTTPD_ARGS+=("$@"); break ;;
@@ -55,6 +60,12 @@ if [[ ! "$PAGE_NAME" =~ ^[A-Za-z0-9_-]+$ ]]; then
     echo "[run_mhttpd, ERROR] Invalid page name: $PAGE_NAME" >&2
     exit 2
 fi
+BUILD_DIR=$(realpath "$BUILD_DIR")
+if [[ ! -f "$BUILD_DIR/index.html" ]]; then
+    echo "[run_mhttpd, ERROR] Missing $BUILD_DIR/index.html" >&2
+    echo "Build and configure the MIDAS custom page first." >&2
+    exit 1
+fi
 
 ODBEDIT=("$MIDASSYS/bin/odbedit" -q -e "$EXPERIMENT")
 ensure_key() {
@@ -73,4 +84,5 @@ ensure_key INT32 "/WebServer/localhost port"
 "${ODBEDIT[@]}" -c "set \"/WebServer/localhost port\" $PORT" >/dev/null
 
 echo "[run_mhttpd] DQM page: http://127.0.0.1:$PORT/$PAGE_NAME"
+cd "$BUILD_DIR"
 exec "$MIDASSYS/bin/mhttpd" -e "$EXPERIMENT" "${MHTTPD_ARGS[@]}"
