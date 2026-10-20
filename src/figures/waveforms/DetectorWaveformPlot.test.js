@@ -60,7 +60,7 @@ describe('live detector waveform plots', () => {
     expect(plot.state.error).toBeNull();
   });
 
-  test('does not refresh the displayed age for a repeated cached sequence', () => {
+  test('tracks browser fetch time separately from product generation time', () => {
     const plot = new SampicWaveformPlot({
       id: 'sampic',
       settings: { crate: 0, feb: 0, chip: 0, channel: 0 },
@@ -71,16 +71,21 @@ describe('live detector waveform plots', () => {
       waveforms: [{ module: 0, submodule: 0, channel: 0, sequence: 7, samples: [1, 4, 2] }],
     };
 
-    plot._updatePlotInternal(payload);
+    const now = jest.spyOn(Date, 'now').mockReturnValue(1000);
+    plot._updatePlotInternal({ ...payload, 'generated-at-unix-ns': 500000000 });
     const firstTimestamp = plot.state.lastDataAt;
-    plot._updatePlotInternal(payload);
-    expect(plot.state.lastDataAt).toBe(firstTimestamp);
+    expect(plot.state.generatedAt).toBe(500);
+    now.mockReturnValue(2000);
+    plot._updatePlotInternal({ ...payload, 'generated-at-unix-ns': 500000000 });
+    expect(plot.state.lastDataAt).toBeGreaterThan(firstTimestamp);
+    expect(plot.state.generatedAt).toBe(500);
 
     plot._updatePlotInternal({
       ...payload,
       waveforms: [{ ...payload.waveforms[0], sequence: 8, samples: [2, 5, 3] }],
     });
     expect(plot.state.lastDataVersion).toContain('8');
+    now.mockRestore();
   });
 
   test('renders MuSiP as timed hit-energy markers', () => {
@@ -90,7 +95,7 @@ describe('live detector waveform plots', () => {
       'hit-series': [{ 'times-ns': [100, 108], energies: [12, 20] }],
     });
     expect(traces[0]).toMatchObject({
-      type: 'scatter', mode: 'markers', x: [100, 108], y: [12, 20],
+      type: 'scatter', mode: 'markers', x: [0, 8], y: [12, 20],
     });
   });
 

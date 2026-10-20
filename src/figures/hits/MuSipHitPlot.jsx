@@ -46,7 +46,7 @@ export default class MuSipHitPlot extends Plot {
         paper_bgcolor: '#ffffff',
         plot_bgcolor: '#f8fafc',
         font: { color: '#172033' },
-        xaxis: { title: 'Hit time (ns)', gridcolor: '#dbe3ee' },
+        xaxis: { title: 'Time since first displayed hit (ns)', gridcolor: '#dbe3ee' },
         yaxis: { title: 'ToT / observed energy', rangemode: 'tozero', gridcolor: '#dbe3ee' },
         showlegend: false,
         annotations: this.statusAnnotations(data),
@@ -68,13 +68,16 @@ export default class MuSipHitPlot extends Plot {
     const energies = series?.energies;
     if (!Array.isArray(times) || !Array.isArray(energies) ||
         times.length === 0 || times.length !== energies.length) return [];
+    const numericTimes = times.map(Number);
+    const origin = Math.min(...numericTimes);
     return [{
       type: 'scatter',
       mode: 'markers',
-      x: times.map(Number),
+      x: numericTimes.map((time) => time - origin),
       y: energies.map(Number),
+      customdata: numericTimes,
       marker: { color: '#dc2626', size: 6, opacity: 0.75 },
-      hovertemplate: '%{x:.2f} ns<br>Energy: %{y:.2f}<extra></extra>',
+      hovertemplate: '%{x:.2f} ns from first hit<br>Detector time: %{customdata:.2f} ns<br>Energy: %{y:.2f}<extra></extra>',
     }];
   }
 

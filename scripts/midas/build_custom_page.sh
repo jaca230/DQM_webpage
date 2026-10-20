@@ -2,13 +2,31 @@
 
 set -euo pipefail
 
+if [[ $# -gt 0 ]]; then
+    case "$1" in
+        -h|--help)
+            echo "Usage: ./scripts/midas/build_custom_page.sh"
+            echo "Build the production dashboard bundle for MIDAS mhttpd."
+            exit 0
+            ;;
+        *)
+            echo "[build_custom_page, ERROR] Unknown option: $1" >&2
+            exit 2
+            ;;
+    esac
+fi
+
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 PROJECT_DIR=$(realpath "$SCRIPT_DIR/../..")
 
 if ! command -v node >/dev/null 2>&1; then
     if [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
         # shellcheck source=/dev/null
+        # nvm.sh may return non-zero when no default alias or .nvmrc exists.
+        # Load its functions without letting errexit terminate this script.
+        set +e
         source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+        set -e
         nvm use --silent 20 >/dev/null
     fi
 fi

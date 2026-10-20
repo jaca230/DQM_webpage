@@ -14,6 +14,7 @@ export default class Plot extends Figure {
       revision: 0,
       lastDataAt: null,
       lastDataVersion: null,
+      generatedAt: null,
       freshnessNow: Date.now(),
     };
   }

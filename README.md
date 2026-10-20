@@ -57,8 +57,9 @@ export MIDASSYS=/home/jack/software/midas
 export MIDAS_EXPTAB=/path/to/exptab
 
 ./scripts/midas/build_custom_page.sh
-./scripts/midas/configure_custom_page.sh EXPERIMENT_NAME \
-  http://127.0.0.1:8080
+./scripts/midas/configure_custom_page.sh \
+  --experiment EXPERIMENT_NAME \
+  --gateway-url http://127.0.0.1:8080
 ```
 
 The configuration command creates:
@@ -75,7 +76,7 @@ instead of replacing the established path.
 Launch `mhttpd` in the foreground on port 8081:
 
 ```sh
-./scripts/midas/run_mhttpd.sh EXPERIMENT_NAME 8081
+./scripts/midas/run_mhttpd.sh --experiment EXPERIMENT_NAME --port 8081
 ```
 
 Open [http://127.0.0.1:8081/DQM](http://127.0.0.1:8081/DQM). For a remote
@@ -93,34 +94,30 @@ python3 benchmarks/rate_tests/run_midas_demo.py
 
 # Terminal 1: publisher and publisher-owned Gaudi sidecar
 cd /home/jack/cpp_projects/midas_stuff/midas_publisher
-source .artifacts/midas-demo/environment.sh
-./build-rate-tests/bin/zmq_publisher \
-  --config .artifacts/midas-demo/publisher_config.json
+./scripts/run.sh --config config/online_demo.json \
+  --experiment ZMQ_PUBLISHER_DEMO \
+  --exptab .artifacts/midas-demo/experiment/exptab
 
-# Terminal 2: gateway with the mhttpd origin added to CORS
-cd /home/jack/large_projects/DQM_webpage/frontend
-python3 benchmarks/web_clients/make_gateway_benchmark_config.py \
-  /home/jack/cpp_projects/dqm_gateway/config/config.json \
-  .artifacts/midas-gateway.json \
-  --port 8080 --threads 2 \
-  --mhttpd-origin http://127.0.0.1:8081 \
-  --preserve-rate-limits
+# Terminal 2: gateway; its default config includes the local mhttpd origin
 cd /home/jack/cpp_projects/dqm_gateway
-./scripts/run.sh \
-  /home/jack/large_projects/DQM_webpage/frontend/.artifacts/midas-gateway.json
+./scripts/run.sh --config config/config.json --port 8080
 
 # Terminal 3: register and run the MIDAS-hosted dashboard
 cd /home/jack/large_projects/DQM_webpage/frontend
-source /home/jack/cpp_projects/midas_stuff/midas_publisher/.artifacts/midas-demo/environment.sh
+export MIDASSYS=/home/jack/software/midas
+export MIDAS_EXPTAB=/home/jack/cpp_projects/midas_stuff/midas_publisher/.artifacts/midas-demo/experiment/exptab
 ./scripts/midas/build_custom_page.sh
-./scripts/midas/configure_custom_page.sh "$MIDAS_EXPT_NAME" http://127.0.0.1:8080
-./scripts/midas/run_mhttpd.sh "$MIDAS_EXPT_NAME" 8081 --no-hostlist
+./scripts/midas/configure_custom_page.sh \
+  --experiment ZMQ_PUBLISHER_DEMO --gateway-url http://127.0.0.1:8080
+./scripts/midas/run_mhttpd.sh \
+  --experiment ZMQ_PUBLISHER_DEMO --port 8081 --no-hostlist
 ```
 
 For a local-only test where MIDAS host access control has not been configured:
 
 ```sh
-./scripts/midas/run_mhttpd.sh EXPERIMENT_NAME 8081 --no-hostlist
+./scripts/midas/run_mhttpd.sh \
+  --experiment EXPERIMENT_NAME --port 8081 --no-hostlist
 ```
 
 Do not use `--no-hostlist` on an exposed DAQ network.
@@ -148,17 +145,14 @@ python3 benchmarks/web_clients/run_benchmark.py \
 
 The production gateway deliberately rate-limits each source IP. Local virtual
 clients all share one IP, so HTTP 429 responses show where that safety policy
-engages, not the server's raw capacity. To measure capacity separately, create
-an isolated high-limit configuration on port 8082:
+engages, not the server's raw capacity. To measure capacity separately, run the
+gateway-owned high-limit configuration on port 8082:
 
 ```sh
-python3 benchmarks/web_clients/make_gateway_benchmark_config.py \
-  /home/jack/cpp_projects/dqm_gateway/config/config.json \
-  .artifacts/web-client-benchmark/gateway-config.json
+cd /home/jack/cpp_projects/dqm_gateway
+./scripts/run.sh --config config/benchmark.json --port 8082
 
-/home/jack/cpp_projects/dqm_gateway/build/bin/dqm_gateway \
-  --config .artifacts/web-client-benchmark/gateway-config.json
-
+cd /home/jack/large_projects/DQM_webpage/frontend
 python3 benchmarks/web_clients/run_benchmark.py \
   --gateway-url http://127.0.0.1:8082 \
   --mhttpd-url http://127.0.0.1:8081/DQM
@@ -214,7 +208,9 @@ It displays `No live histogram found` when the gateway has no matching data.
 Reset a previously saved layout to the default once to add this new tab.
 Histogram figures independently support linear or logarithmic energy and count
 axes. All live plots retain the last valid response if a later request is empty
-or unavailable and can display either its client-observed age or timestamp.
+or unavailable. Figure settings independently control the Gaudi product
+generation time and the browser fetch time as relative ages, timestamps, or
+hidden labels.
 
 ## Documentation
 

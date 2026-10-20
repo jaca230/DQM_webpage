@@ -346,11 +346,11 @@ export default class DataFetchManager {
    * @private
    */
   async _fetchDataForSubscriber(url, subscriberId) {
-    try {
-      const data = await this._performFetch(url);
+    const { data, error } = await this._performFetch(url);
+    if (error) {
+      this._handleFetchErrorForSubscriber(url, new Error(error), subscriberId);
+    } else {
       this._handleFetchSuccessForSubscriber(url, data, subscriberId);
-    } catch (error) {
-      this._handleFetchErrorForSubscriber(url, error, subscriberId);
     }
   }
 
@@ -358,39 +358,39 @@ export default class DataFetchManager {
    * Fetch data for a URL (shared)
    * @private
    */
-    async _fetchData(url) {
+  async _fetchData(url) {
     if (this.inflightRequests.has(url)) return this.inflightRequests.get(url);
 
     const fetchPromise = (async () => {
-        const { data, error } = await this._performFetch(url);
-        if (error) {
+      const { data, error } = await this._performFetch(url);
+      if (error) {
         this._handleFetchError(url, new Error(error));
-        } else {
+      } else {
         this._handleFetchSuccess(url, data);
-        }
+      }
     })();
 
     this.inflightRequests.set(url, fetchPromise);
     fetchPromise.finally(() => this.inflightRequests.delete(url));
     return fetchPromise;
-    }
+  }
 
   /**
    * Perform HTTP request
    * @private
    */
-    async _performFetch(url) {
+  async _performFetch(url) {
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
+      const response = await fetch(url);
+      if (!response.ok) {
         return { data: null, error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        const data = await response.json();
-        return { data, error: null };
+      }
+      const data = await response.json();
+      return { data, error: null };
     } catch (err) {
-        return { data: null, error: err.message || 'Network error' };
+      return { data: null, error: err.message || 'Network error' };
     }
-    }
+  }
 
   /**
    * Handle successful fetch (shared)

@@ -27,9 +27,20 @@ export default class Figure extends BaseFigure {
       lastUpdatedDisplay: {
         type: SettingTypes.SELECT,
         default: 'age',
-        label: 'Last updated',
+        label: 'Client fetched',
         options: [
           { value: 'age', label: 'Time since update' },
+          { value: 'timestamp', label: 'Timestamp' },
+          { value: 'hidden', label: 'Hidden' },
+        ],
+        advanced: true,
+      },
+      generatedDisplay: {
+        type: SettingTypes.SELECT,
+        default: 'age',
+        label: 'Product generated',
+        options: [
+          { value: 'age', label: 'Time since generation' },
           { value: 'timestamp', label: 'Timestamp' },
           { value: 'hidden', label: 'Hidden' },
         ],
@@ -48,6 +59,7 @@ export default class Figure extends BaseFigure {
       error: null,
       lastDataAt: null,
       lastDataVersion: null,
+      generatedAt: null,
       freshnessNow: Date.now(),
     };
 
@@ -291,26 +303,46 @@ export default class Figure extends BaseFigure {
   freshnessState(data) {
     const now = Date.now();
     const version = this.dataVersion(data);
-    const changed = version === null || version !== this.state.lastDataVersion;
     return {
-      lastDataAt: changed ? now : this.state.lastDataAt,
-      lastDataVersion: changed ? version : this.state.lastDataVersion,
+      lastDataAt: now,
+      lastDataVersion: version,
+      generatedAt: this.generatedTime(data) ?? this.state.generatedAt,
       freshnessNow: now,
     };
   }
 
-  renderFreshness() {
-    const { lastDataAt, freshnessNow } = this.state;
-    const mode = this.settings.lastUpdatedDisplay;
-    if (!lastDataAt || mode === 'hidden') return null;
-    let text;
-    if (mode === 'timestamp') {
-      text = `Updated ${new Date(lastDataAt).toLocaleTimeString()}`;
-    } else {
-      const seconds = Math.max(0, Math.floor((freshnessNow - lastDataAt) / 1000));
-      text = seconds < 2 ? 'Updated just now' : `Updated ${seconds}s ago`;
+  generatedTime(data) {
+    if (!data || typeof data !== 'object') return null;
+    let nanoseconds = data['generated-at-unix-ns'];
+    if (nanoseconds === undefined) {
+      for (const key of ['waveforms', 'hit-series', 'histograms']) {
+        if (!Array.isArray(data[key])) continue;
+        nanoseconds = data[key].find((item) => item?.['generated-at-unix-ns'] !== undefined)
+          ?.['generated-at-unix-ns'];
+        if (nanoseconds !== undefined) break;
+      }
     }
-    return <div className="figure-freshness">{text}</div>;
+    const milliseconds = Number(nanoseconds) / 1e6;
+    return Number.isFinite(milliseconds) && milliseconds > 0 ? milliseconds : null;
+  }
+
+  freshnessText(label, timestamp, mode, now) {
+    if (!timestamp || mode === 'hidden') return null;
+    if (mode === 'timestamp') {
+      return `${label} ${new Date(timestamp).toLocaleTimeString()}`;
+    }
+    const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+    return seconds < 2 ? `${label} just now` : `${label} ${seconds}s ago`;
+  }
+
+  renderFreshness() {
+    const { lastDataAt, generatedAt, freshnessNow } = this.state;
+    const messages = [
+      this.freshnessText('Generated', generatedAt, this.settings.generatedDisplay, freshnessNow),
+      this.freshnessText('Fetched', lastDataAt, this.settings.lastUpdatedDisplay, freshnessNow),
+    ].filter(Boolean);
+    if (!messages.length) return null;
+    return <div className="figure-freshness">{messages.join(' · ')}</div>;
   }
 
   render() {
