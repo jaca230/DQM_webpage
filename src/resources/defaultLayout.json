@@ -118,48 +118,48 @@
     },
     {
       "id": "tab-pulse-integrals",
-      "name": "Pulse Integrals",
+      "name": "Pulse Integrals: Global",
       "defaultZoom": 1,
       "figures": [
         {
-          "type": "HistogramPlot",
+          "type": "SampicPulseIntegralPlot",
           "id": "histogram-sampic-integral",
-          "title": "SAMPIC Pulse Integral",
+          "title": "Global SAMPIC Pulse Integral",
           "settings": {
-            "histogramName": "PulseIntegrals/sampic_pulse_integral",
+            "scope": "global",
             "maximumBins": 200,
             "updateFrequency": 1,
             "dataUrl": "/api/v1/histograms"
           }
         },
         {
-          "type": "HistogramPlot",
+          "type": "HdSocPulseIntegralPlot",
           "id": "histogram-hdsoc-integral",
-          "title": "HDSoC Pulse Integral",
+          "title": "Global HDSoC Pulse Integral",
           "settings": {
-            "histogramName": "PulseIntegrals/hdsoc_pulse_integral",
+            "scope": "global",
             "maximumBins": 200,
             "updateFrequency": 1,
             "dataUrl": "/api/v1/histograms"
           }
         },
         {
-          "type": "HistogramPlot",
+          "type": "Wfd5PulseIntegralPlot",
           "id": "histogram-wfd5-integral",
-          "title": "WFD5 Pulse Integral",
+          "title": "Global WFD5 Pulse Integral",
           "settings": {
-            "histogramName": "PulseIntegrals/wfd5_pulse_integral",
+            "scope": "global",
             "maximumBins": 200,
             "updateFrequency": 1,
             "dataUrl": "/api/v1/histograms"
           }
         },
         {
-          "type": "HistogramPlot",
+          "type": "MusipPulseIntegralPlot",
           "id": "histogram-musip-integral",
-          "title": "MuSiP Pulse Integral",
+          "title": "Global MuSiP Energy",
           "settings": {
-            "histogramName": "PulseIntegrals/musip_pulse_integral",
+            "scope": "global",
             "maximumBins": 200,
             "updateFrequency": 1,
             "dataUrl": "/api/v1/histograms"
@@ -193,6 +193,102 @@
         },
         {
           "id": "histogram-musip-integral",
+          "x": 610,
+          "y": 390,
+          "width": 570,
+          "height": 350,
+          "zIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "tab-pulse-integral-channels",
+      "name": "Pulse Integrals: Channels",
+      "defaultZoom": 1,
+      "figures": [
+        {
+          "type": "SampicPulseIntegralPlot",
+          "id": "histogram-sampic-channel-integral",
+          "title": "SAMPIC C0 FEB0 S0 Ch12 Pulse Integral",
+          "settings": {
+            "scope": "channel",
+            "crate": 0,
+            "feb": 0,
+            "chip": 0,
+            "channel": 12,
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        },
+        {
+          "type": "HdSocPulseIntegralPlot",
+          "id": "histogram-hdsoc-channel-integral",
+          "title": "HDSoC B0 Ch0 Pulse Integral",
+          "settings": {
+            "scope": "channel",
+            "board": 0,
+            "channel": 0,
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        },
+        {
+          "type": "Wfd5PulseIntegralPlot",
+          "id": "histogram-wfd5-channel-integral",
+          "title": "WFD5 C0 AMC1 Ch1 Pulse Integral",
+          "settings": {
+            "scope": "channel",
+            "crate": 0,
+            "amc": 1,
+            "channel": 1,
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        },
+        {
+          "type": "MusipPulseIntegralPlot",
+          "id": "histogram-musip-channel-integral",
+          "title": "MuSiP Group 0 Ch0 Energy",
+          "settings": {
+            "scope": "channel",
+            "group": 0,
+            "channel": 0,
+            "maximumBins": 200,
+            "updateFrequency": 1,
+            "dataUrl": "/api/v1/histograms"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "id": "histogram-sampic-channel-integral",
+          "x": 20,
+          "y": 20,
+          "width": 570,
+          "height": 350,
+          "zIndex": 4
+        },
+        {
+          "id": "histogram-hdsoc-channel-integral",
+          "x": 610,
+          "y": 20,
+          "width": 570,
+          "height": 350,
+          "zIndex": 3
+        },
+        {
+          "id": "histogram-wfd5-channel-integral",
+          "x": 20,
+          "y": 390,
+          "width": 570,
+          "height": 350,
+          "zIndex": 2
+        },
+        {
+          "id": "histogram-musip-channel-integral",
           "x": 610,
           "y": 390,
           "width": 570,

@@ -32,36 +32,6 @@ export default class MultiSourceStrategy extends FetchStrategy {
         }
       }
     );
-
-    // Check cache immediately
-    const allCached = {};
-    let hasAllData = true;
-    let hasAnyErrors = false;
-    const errorMap = {};
-
-    for (const url of this.urls) {
-      const cached = this.dataManager.getCachedData(url);
-      if (cached) {
-        if (cached.data !== null) {
-          allCached[url] = cached.data;
-        }
-        if (cached.error !== null) {
-          errorMap[url] = cached.error;
-          hasAnyErrors = true;
-        }
-      } else {
-        hasAllData = false;
-      }
-    }
-
-    if (hasAllData) {
-      this.fig.setState({ loading: false });
-      if (hasAnyErrors) {
-        this.fig.onMultiDataError(errorMap);
-      } else {
-        this.fig.onMultiDataReceived(allCached);
-      }
-    }
   }
 
   unsubscribe() {

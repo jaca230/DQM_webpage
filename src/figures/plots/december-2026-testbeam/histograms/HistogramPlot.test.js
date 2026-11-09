@@ -1,4 +1,4 @@
-jest.mock('../plots/PlotlyComponent', () => () => null);
+jest.mock('../../PlotlyComponent', () => () => null);
 
 import HistogramPlot from './HistogramPlot';
 
@@ -7,14 +7,14 @@ describe('live histogram plot', () => {
     const plot = new HistogramPlot({
       id: 'histogram',
       settings: {
-        histogramName: 'PulseIntegrals/wfd5_pulse_integral',
+        histogramName: 'PulseIntegrals/wfd5/global/pulse_integral',
         baseline: 'operator-zero',
         maximumBins: 128,
       },
     });
 
     expect(Object.fromEntries(new URL(plot.getDataUrl()).searchParams)).toEqual({
-      name: 'PulseIntegrals/wfd5_pulse_integral',
+      name: 'PulseIntegrals/wfd5/global/pulse_integral',
       'max-bins': '128',
       baseline: 'operator-zero',
     });

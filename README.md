@@ -50,17 +50,21 @@ frontend web server is required. The page appears as **DQM** in the MIDAS menu,
 uses the normal MIDAS header/navigation, and continues to request bounded views
 from `dqm_gateway`.
 
-Build and register the page in an existing experiment:
+Build, register, and launch the page in an existing experiment:
 
 ```sh
 export MIDASSYS=/home/jack/software/midas
 export MIDAS_EXPTAB=/path/to/exptab
 
-./scripts/midas/build_custom_page.sh
-./scripts/midas/configure_custom_page.sh \
+./scripts/midas/launch.sh \
   --experiment EXPERIMENT_NAME \
-  --gateway-url http://127.0.0.1:8080
+  --gateway-url http://127.0.0.1:8000
 ```
+
+The launcher runs the production build and ODB registration before starting
+`mhttpd`. Use `--skip-build` when only restarting an unchanged page. The lower
+level `build_custom_page.sh`, `configure_custom_page.sh`, and `run_mhttpd.sh`
+commands remain available for debugging individual steps.
 
 The configuration command creates:
 
@@ -73,17 +77,15 @@ The configuration command creates:
 uses a different directory, copy or symlink this build into that directory
 instead of replacing the established path.
 
-Launch `mhttpd` in the foreground on port 8081:
-
-```sh
-./scripts/midas/run_mhttpd.sh --experiment EXPERIMENT_NAME --port 8081
-```
-
-Open [http://127.0.0.1:8081/DQM](http://127.0.0.1:8081/DQM). For a remote
+Open [http://127.0.0.1:8080/DQM](http://127.0.0.1:8080/DQM). For a remote
 browser, pass the externally reachable gateway URL to the configuration script;
 the browser must not be configured with `127.0.0.1` unless it runs on the DAQ
 host. Add the corresponding `mhttpd` origin, such as
-`http://daq-host:8081`, to the gateway's exact `allowed-origins` list.
+`http://daq-host:8080`, to the gateway's exact `allowed-origins` list.
+
+Port 8080 is not forwarded to another server. It is the default HTTP listener
+for `mhttpd`, which serves the MIDAS interface and the DQM production bundle.
+The gateway remains a separate process on port 8000.
 
 For the existing full detector demo, use four terminals:
 
@@ -94,30 +96,28 @@ python3 benchmarks/rate_tests/run_midas_demo.py
 
 # Terminal 1: publisher and publisher-owned Gaudi sidecar
 cd /home/jack/cpp_projects/midas_stuff/midas_publisher
-./scripts/run.sh --config config/online_demo.json \
+./scripts/run.sh --config config/examples/online_demo.json \
   --experiment ZMQ_PUBLISHER_DEMO \
   --exptab .artifacts/midas-demo/experiment/exptab
 
 # Terminal 2: gateway; its default config includes the local mhttpd origin
 cd /home/jack/cpp_projects/dqm_gateway
-./scripts/run.sh --config config/config.json --port 8080
+./scripts/run.sh
 
-# Terminal 3: register and run the MIDAS-hosted dashboard
+# Terminal 3: build, register, and run the MIDAS-hosted dashboard
 cd /home/jack/large_projects/DQM_webpage/frontend
 export MIDASSYS=/home/jack/software/midas
 export MIDAS_EXPTAB=/home/jack/cpp_projects/midas_stuff/midas_publisher/.artifacts/midas-demo/experiment/exptab
-./scripts/midas/build_custom_page.sh
-./scripts/midas/configure_custom_page.sh \
-  --experiment ZMQ_PUBLISHER_DEMO --gateway-url http://127.0.0.1:8080
-./scripts/midas/run_mhttpd.sh \
-  --experiment ZMQ_PUBLISHER_DEMO --port 8081 --no-hostlist
+./scripts/midas/launch.sh \
+  --experiment ZMQ_PUBLISHER_DEMO \
+  --gateway-url http://127.0.0.1:8000 \
+  --no-hostlist
 ```
 
 For a local-only test where MIDAS host access control has not been configured:
 
 ```sh
-./scripts/midas/run_mhttpd.sh \
-  --experiment EXPERIMENT_NAME --port 8081 --no-hostlist
+./scripts/midas/launch.sh --experiment EXPERIMENT_NAME --no-hostlist
 ```
 
 Do not use `--no-hostlist` on an exposed DAQ network.
@@ -136,8 +136,8 @@ With the full pipeline, gateway, and `mhttpd` running:
 
 ```sh
 python3 benchmarks/web_clients/run_benchmark.py \
-  --gateway-url http://127.0.0.1:8080 \
-  --mhttpd-url http://127.0.0.1:8081/DQM \
+  --gateway-url http://127.0.0.1:8000 \
+  --mhttpd-url http://127.0.0.1:8080/DQM \
   --clients 1 2 4 8 16 32 \
   --poll-intervals 2 1 0.5 \
   --duration 10
@@ -155,7 +155,7 @@ cd /home/jack/cpp_projects/dqm_gateway
 cd /home/jack/large_projects/DQM_webpage/frontend
 python3 benchmarks/web_clients/run_benchmark.py \
   --gateway-url http://127.0.0.1:8082 \
-  --mhttpd-url http://127.0.0.1:8081/DQM
+  --mhttpd-url http://127.0.0.1:8080/DQM
 ```
 
 The high-limit configuration is a benchmark fixture only. Keep the production
@@ -197,13 +197,16 @@ Detector coordinates, channel, maximum returned samples, and polling interval
 are configurable per figure. SAMPIC exposes crate/FEB/chip/channel, WFD5
 exposes crate/AMC/channel, and HDSoC exposes board/channel. MuSiP's bounded
 hit-series endpoint exposes producer group/channel and explicit hit times.
+Waveform color is available under each figure's advanced settings.
 
 ## Built-in histograms
 
-The **Live Histogram** figure reads a named histogram from the runtime-configured
-gateway `/api/v1/histograms` endpoint and requests only the configured
-maximum number of bins. The default Pulse Integrals tab contains the SAMPIC,
-HDSoC, WFD5, and MuSiP integral histograms produced by the online Gaudi job.
+The histogram figures read one named histogram from the runtime-configured
+gateway `/api/v1/histograms` endpoint and request only the configured maximum
+number of bins. Detector pulse-integral figures select either an explicitly
+labeled global distribution or a module/submodule/channel distribution. The
+default Pulse Integrals tab starts with the global SAMPIC, HDSoC, WFD5, and
+MuSiP distributions produced by the online Gaudi job.
 It displays `No live histogram found` when the gateway has no matching data.
 Reset a previously saved layout to the default once to add this new tab.
 Histogram figures independently support linear or logarithmic energy and count

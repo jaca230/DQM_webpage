@@ -69,7 +69,7 @@ export default class FigureTile extends React.Component {
   };
 
   render() {
-    const { title, children, schema = {} } = this.props;
+    const { title, figureType, children, schema = {} } = this.props;
     const { showMenu, tempSettings } = this.state;
 
     return (
@@ -160,6 +160,7 @@ export default class FigureTile extends React.Component {
         {/* Settings menu */}
         {showMenu && tempSettings && (
           <SettingsMenu
+            figureType={figureType}
             settings={tempSettings}
             schema={schema}
             onChange={this.handleSettingChange}

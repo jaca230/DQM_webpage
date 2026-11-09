@@ -1,5 +1,5 @@
 import DetectorWaveformPlot from './DetectorWaveformPlot';
-import SettingTypes from '../../enums/SettingTypes';
+import SettingTypes from '../../../../enums/SettingTypes';
 
 export default class HdSocWaveformPlot extends DetectorWaveformPlot {
   static displayName = 'HDSoC Waveform';

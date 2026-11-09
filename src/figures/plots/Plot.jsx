@@ -123,6 +123,10 @@ export default class Plot extends Figure {
     };
   }
 
+  renderPlotCaption() {
+    return null;
+  }
+
   render() {
     const { loading, error } = this.state;
 
@@ -184,6 +188,7 @@ export default class Plot extends Figure {
             }}
           />
         </div>
+        {this.renderPlotCaption()}
         {this.renderFreshness()}
       </div>
     );

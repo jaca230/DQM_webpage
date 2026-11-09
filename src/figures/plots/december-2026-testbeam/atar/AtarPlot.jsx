@@ -1,8 +1,8 @@
-import Plot from '../plots/Plot';
-import SettingTypes from '../../enums/SettingTypes';
-import { resolveGatewayUrl } from '../../config/runtimeConfig';
+import TestBeamPlot from '../TestBeamPlot';
+import SettingTypes from '../../../../enums/SettingTypes';
+import { resolveGatewayUrl } from '../../../../config/runtimeConfig';
 
-export default class AtarPlot extends Plot {
+export default class AtarPlot extends TestBeamPlot {
   static viewName = '';
   static get settingSchema() {
     return {
@@ -16,18 +16,14 @@ export default class AtarPlot extends Plot {
     return url.toString();
   }
   baseLayout(xTitle = '', yTitle = '') {
-    return {
-      autosize: true, margin: { t: 25, r: 24, l: 58, b: 48 },
-      paper_bgcolor: '#fff', plot_bgcolor: '#f8fafc', font: { color: '#172033' },
-      xaxis: { title: xTitle, gridcolor: '#dbe3ee' },
-      yaxis: { title: yTitle, gridcolor: '#dbe3ee' },
-      showlegend: true,
-    };
+    return this.plotLayout(xTitle || 'Horizontal coordinate', yTitle || 'Vertical coordinate', {
+      showLegend: true,
+    });
   }
   initPlot(payload) { return this.makePlot(payload); }
   updatePlot(payload) { return this.makePlot(payload); }
   noData() {
-    return { data: [], layout: { ...this.baseLayout(), annotations: [{ text: 'No live ATAR data found', x: 0.5, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false }] } };
+    return { data: [], layout: { ...this.baseLayout(), annotations: [this.emptyAnnotation('No live ATAR data found')] } };
   }
   matrix(data) {
     const nx = Number(data?.['x-bins']); const ny = Number(data?.['y-bins']);

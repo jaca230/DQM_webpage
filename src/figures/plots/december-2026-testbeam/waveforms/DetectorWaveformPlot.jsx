@@ -1,9 +1,9 @@
-import Plot from '../plots/Plot';
-import SettingTypes from '../../enums/SettingTypes';
+import TestBeamPlot from '../TestBeamPlot';
+import SettingTypes from '../../../../enums/SettingTypes';
 import WaveformDataAdapter from './WaveformDataAdapter';
-import { resolveGatewayUrl } from '../../config/runtimeConfig';
+import { resolveGatewayUrl } from '../../../../config/runtimeConfig';
 
-export default class DetectorWaveformPlot extends Plot {
+export default class DetectorWaveformPlot extends TestBeamPlot {
   static detectorName = 'detector';
   static lineColor = '#2563eb';
 
@@ -19,6 +19,12 @@ export default class DetectorWaveformPlot extends Plot {
         type: SettingTypes.INT,
         default: 256,
         label: 'Maximum displayed samples',
+        advanced: true,
+      },
+      lineColor: {
+        type: SettingTypes.COLOR,
+        default: this.lineColor,
+        label: 'Waveform color',
         advanced: true,
       },
       dataUrl: {
@@ -38,6 +44,10 @@ export default class DetectorWaveformPlot extends Plot {
     return `Ch${this.settings.channel}`;
   }
 
+  followsLatest() {
+    return false;
+  }
+
   componentDidMount() {
     super.componentDidMount();
     if (this.getDataUrl() === 'None') this._updatePlotInternal(null);
@@ -48,28 +58,29 @@ export default class DetectorWaveformPlot extends Plot {
     if (baseUrl === 'None') return baseUrl;
     const url = new URL(resolveGatewayUrl(baseUrl));
     url.searchParams.set('detector', this.constructor.detectorName);
-    const selection = this.getSelection();
-    url.searchParams.set('module', selection.module);
-    url.searchParams.set('submodule', selection.submodule);
-    url.searchParams.set('channel', selection.channel);
+    if (this.followsLatest()) {
+      url.searchParams.set('latest', 'true');
+    } else {
+      const selection = this.getSelection();
+      url.searchParams.set('module', selection.module);
+      url.searchParams.set('submodule', selection.submodule);
+      url.searchParams.set('channel', selection.channel);
+    }
     url.searchParams.set('max-samples', this.settings.maximumSamples);
     return url.toString();
   }
 
   initPlot(payload) {
     const data = this.buildTraces(payload);
+    const layout = this.plotLayout('Time (ns)', 'Digitized signal (ADC or V)', {
+      showLegend: true,
+      topMargin: 50,
+    });
     return {
       data,
       layout: {
-        autosize: true,
-        margin: { t: 20, r: 20, l: 58, b: 48 },
-        paper_bgcolor: '#ffffff',
-        plot_bgcolor: '#f8fafc',
-        font: { color: '#172033' },
-        xaxis: { title: 'Time (ns)', gridcolor: '#dbe3ee', zerolinecolor: '#94a3b8' },
-        yaxis: { title: 'ADC value', gridcolor: '#dbe3ee', zerolinecolor: '#94a3b8' },
-        showlegend: true,
-        legend: { orientation: 'h', y: -0.22 },
+        ...layout,
+        legend: { orientation: 'h', x: 0, y: 1.06, xanchor: 'left', yanchor: 'bottom' },
         annotations: this.statusAnnotations(data),
       },
     };
@@ -93,7 +104,7 @@ export default class DetectorWaveformPlot extends Plot {
     const productPeriod = Number(waveform?.['sample-period-ns']);
     const period = Number.isFinite(productPeriod) && productPeriod > 0 ? productPeriod : 1;
     const explicitTimes = WaveformDataAdapter.times(waveform);
-    const name = `${this.constructor.detectorName} ${this.selectionLabel()}`;
+    const name = `${this.constructor.detectorName} ${this.selectionLabel(waveform)}`;
     return [{
       // Gateway views are already bounded/downsampled. SVG scatter avoids the
       // noisy WebGL clear-with-empty-mask path in Plotly during live updates.
@@ -102,12 +113,15 @@ export default class DetectorWaveformPlot extends Plot {
       x: explicitTimes || samples.map((_, index) => index * period),
       y: samples,
       name,
-      line: { color: this.constructor.lineColor, width: 1.5 },
+      line: { color: this.settings.lineColor, width: 1.5 },
       hovertemplate: '%{x:.2f} ns<br>%{y:.2f}<extra>%{fullData.name}</extra>',
     }];
   }
 
   waveformFromPayload(payload) {
+    if (this.followsLatest()) {
+      return WaveformDataAdapter.first(payload, this.constructor.detectorName);
+    }
     const selection = this.getSelection();
     return WaveformDataAdapter.find(payload, {
       detector: this.constructor.detectorName,
@@ -117,14 +131,6 @@ export default class DetectorWaveformPlot extends Plot {
 
   statusAnnotations(data) {
     if (data.length) return [];
-    return [{
-      text: 'No live data found',
-      x: 0.5,
-      y: 0.5,
-      xref: 'paper',
-      yref: 'paper',
-      showarrow: false,
-      font: { color: '#64748b', size: 16 },
-    }];
+    return [this.emptyAnnotation('No live data found')];
   }
 }

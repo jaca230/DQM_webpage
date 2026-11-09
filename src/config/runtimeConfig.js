@@ -12,7 +12,7 @@ export function getGatewayBaseUrl() {
   if (configured) return configured.replace(/\/$/, '');
 
   const location = browserLocation();
-  return `${location.protocol}//${location.hostname}:8080`;
+  return `${location.protocol}//${location.hostname}:8000`;
 }
 
 export function resolveGatewayUrl(pathOrUrl) {

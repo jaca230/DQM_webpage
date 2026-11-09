@@ -45,4 +45,6 @@ if [[ ! -d node_modules ]]; then
 fi
 
 GENERATE_SOURCEMAP=false PUBLIC_URL=/ npm run build
+mkdir -p "$PROJECT_DIR/build/.well-known/appspecific"
+printf '{}\n' > "$PROJECT_DIR/build/.well-known/appspecific/com.chrome.devtools.json"
 echo "[build_custom_page] Built MIDAS custom page in $PROJECT_DIR/build"

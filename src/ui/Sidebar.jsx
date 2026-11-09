@@ -7,6 +7,11 @@ import PluginManagementModal from './modals/PluginManagementModal';
 import PluginRegistrationModal from './modals/PluginRegistrationModal';
 
 const MINIMUM_WIDTH = 48;
+const MINIMUM_ZOOM = 0.2;
+const MAXIMUM_ZOOM = 5;
+const ZOOM_STEP = 0.1;
+
+const clampZoom = (value) => Math.min(MAXIMUM_ZOOM, Math.max(MINIMUM_ZOOM, value));
 
 export default class Sidebar extends React.Component {
   state = {
@@ -16,7 +21,14 @@ export default class Sidebar extends React.Component {
     resizing: false,
     lastPointerX: 0,
     activeModal: null,
+    zoomInput: null,
   };
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.zoom !== this.props.zoom && this.state.zoomInput !== null) {
+      this.setState({ zoomInput: null });
+    }
+  }
 
   componentWillUnmount() {
     document.removeEventListener('mousemove', this.handleResize);
@@ -83,10 +95,22 @@ export default class Sidebar extends React.Component {
     handlers[operation]?.();
   };
 
-  handleApplicationSettings = ({ syncMode, zoom }) => {
+  handleApplicationSettings = ({ syncMode }) => {
     this.props.onSyncModeChange?.(syncMode);
-    this.props.onZoomChange?.(zoom);
     this.setModal(null);
+  };
+
+  changeZoom = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+    this.props.onZoomChange?.(Number(clampZoom(numericValue).toFixed(2)));
+  };
+
+  applyZoomInput = () => {
+    const percent = Number(this.state.zoomInput);
+    if (!Number.isFinite(percent)) return;
+    this.changeZoom(percent / 100);
+    this.setState({ zoomInput: null });
   };
 
   figureOptions() {
@@ -110,9 +134,15 @@ export default class Sidebar extends React.Component {
       isMobile = false,
       onCloseMobile,
     } = this.props;
-    const { selectedFigureType, collapsed, width, activeModal } = this.state;
+    const { selectedFigureType, collapsed, width, activeModal, zoomInput } = this.state;
     const isCollapsed = !isMobile && collapsed;
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    const currentZoom = clampZoom(Number(zoom) || 1);
+    const defaultZoom = clampZoom(Number(activeTab?.defaultZoom) || 1);
+    const zoomInputValue = zoomInput ?? Math.round(currentZoom * 100);
+    const zoomInputValid = zoomInput !== null
+      && zoomInput !== ''
+      && Number.isFinite(Number(zoomInput));
     const options = this.figureOptions();
 
     return (
@@ -155,6 +185,67 @@ export default class Sidebar extends React.Component {
 
             <section className="sidebar-section">
               <h3>Workspace</h3>
+              <div className="sidebar-zoom" aria-label="Canvas zoom controls">
+                <button
+                  className="button button-secondary sidebar-zoom-step"
+                  type="button"
+                  onClick={() => this.changeZoom(currentZoom - ZOOM_STEP)}
+                  disabled={currentZoom <= MINIMUM_ZOOM}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <input
+                  type="range"
+                  min={MINIMUM_ZOOM * 100}
+                  max={MAXIMUM_ZOOM * 100}
+                  value={Math.round(currentZoom * 100)}
+                  onChange={(event) => this.changeZoom(Number(event.target.value) / 100)}
+                  aria-label="Canvas zoom"
+                />
+                <button
+                  className="button button-secondary sidebar-zoom-step"
+                  type="button"
+                  onClick={() => this.changeZoom(currentZoom + ZOOM_STEP)}
+                  disabled={currentZoom >= MAXIMUM_ZOOM}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+              <div className="sidebar-zoom-manual">
+                <input
+                  className="sidebar-zoom-input"
+                  type="number"
+                  min={MINIMUM_ZOOM * 100}
+                  max={MAXIMUM_ZOOM * 100}
+                  value={zoomInputValue}
+                  onChange={(event) => this.setState({ zoomInput: event.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      this.applyZoomInput();
+                    }
+                  }}
+                  aria-label="Canvas zoom percent"
+                />
+                <span>%</span>
+                <button
+                  className="button button-secondary sidebar-zoom-action"
+                  type="button"
+                  onClick={this.applyZoomInput}
+                  disabled={!zoomInputValid}
+                >
+                  Apply
+                </button>
+                <button
+                  className="button button-secondary sidebar-zoom-action"
+                  type="button"
+                  onClick={() => this.changeZoom(defaultZoom)}
+                >
+                  Reset
+                </button>
+              </div>
               <button className="button button-secondary button-block" type="button" onClick={() => this.setModal('layout')}>
                 Manage layout
               </button>
@@ -181,8 +272,6 @@ export default class Sidebar extends React.Component {
         <ApplicationSettingsModal
           visible={activeModal === 'settings'}
           syncMode={syncMode}
-          zoom={zoom}
-          defaultZoom={activeTab?.defaultZoom || 1}
           onApply={this.handleApplicationSettings}
           onClose={() => this.setModal(null)}
         />

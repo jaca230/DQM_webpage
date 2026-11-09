@@ -12,10 +12,14 @@ describe('default layout', () => {
       'HdSocWaveformPlot',
       'Wfd5WaveformPlot',
       'MuSipHitPlot',
-      'HistogramPlot',
-      'HistogramPlot',
-      'HistogramPlot',
-      'HistogramPlot',
+      'SampicPulseIntegralPlot',
+      'HdSocPulseIntegralPlot',
+      'Wfd5PulseIntegralPlot',
+      'MusipPulseIntegralPlot',
+      'SampicPulseIntegralPlot',
+      'HdSocPulseIntegralPlot',
+      'Wfd5PulseIntegralPlot',
+      'MusipPulseIntegralPlot',
       'AtarOccupancyPlot',
       'AtarHitsPerEventPlot',
       'AtarBaselinePlot',
@@ -52,15 +56,25 @@ describe('default layout', () => {
     expect(figures.MuSipHitPlot).toMatchObject({ group: 0, channel: 0 });
   });
 
-  test('selects histograms produced by the online Gaudi pipeline', () => {
-    const names = defaultLayout.tabs[1].figures.map(
-      (figure) => figure.settings.histogramName
+  test('starts detector pulse-integral plots with explicit global scope', () => {
+    expect(defaultLayout.tabs[1].figures.map((figure) => figure.settings.scope))
+      .toEqual(['global', 'global', 'global', 'global']);
+  });
+
+  test('provides populated simulator examples in a separate channel-integral tab', () => {
+    expect(defaultLayout.tabs[1].name).toBe('Pulse Integrals: Global');
+    expect(defaultLayout.tabs[2].name).toBe('Pulse Integrals: Channels');
+
+    const figures = Object.fromEntries(
+      defaultLayout.tabs[2].figures.map((figure) => [figure.type, figure.settings])
     );
-    expect(names).toEqual([
-      'PulseIntegrals/sampic_pulse_integral',
-      'PulseIntegrals/hdsoc_pulse_integral',
-      'PulseIntegrals/wfd5_pulse_integral',
-      'PulseIntegrals/musip_pulse_integral',
-    ]);
+    expect(Object.values(figures).map(({ scope }) => scope))
+      .toEqual(['channel', 'channel', 'channel', 'channel']);
+    expect(figures.SampicPulseIntegralPlot).toMatchObject({
+      crate: 0, feb: 0, chip: 0, channel: 12,
+    });
+    expect(figures.HdSocPulseIntegralPlot).toMatchObject({ board: 0, channel: 0 });
+    expect(figures.Wfd5PulseIntegralPlot).toMatchObject({ crate: 0, amc: 1, channel: 1 });
+    expect(figures.MusipPulseIntegralPlot).toMatchObject({ group: 0, channel: 0 });
   });
 });

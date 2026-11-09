@@ -1,8 +1,8 @@
-import Plot from '../plots/Plot';
-import SettingTypes from '../../enums/SettingTypes';
-import { resolveGatewayUrl } from '../../config/runtimeConfig';
+import TestBeamPlot from '../TestBeamPlot';
+import SettingTypes from '../../../../enums/SettingTypes';
+import { resolveGatewayUrl } from '../../../../config/runtimeConfig';
 
-export default class MuSipHitPlot extends Plot {
+export default class MuSipHitPlot extends TestBeamPlot {
   static displayName = 'MuSiP Hit Energy';
   static name = 'MuSipHitPlot';
 
@@ -38,17 +38,18 @@ export default class MuSipHitPlot extends Plot {
 
   initPlot(payload) {
     const data = this.buildTraces(payload);
+    const layout = this.plotLayout(
+      'Time since first displayed hit (ns)',
+      'Observed energy / ToT',
+    );
     return {
       data,
       layout: {
-        autosize: true,
-        margin: { t: 20, r: 20, l: 58, b: 48 },
-        paper_bgcolor: '#ffffff',
-        plot_bgcolor: '#f8fafc',
-        font: { color: '#172033' },
-        xaxis: { title: 'Time since first displayed hit (ns)', gridcolor: '#dbe3ee' },
-        yaxis: { title: 'ToT / observed energy', rangemode: 'tozero', gridcolor: '#dbe3ee' },
-        showlegend: false,
+        ...layout,
+        yaxis: {
+          ...layout.yaxis,
+          rangemode: 'tozero',
+        },
         annotations: this.statusAnnotations(data),
       },
     };
@@ -83,14 +84,6 @@ export default class MuSipHitPlot extends Plot {
 
   statusAnnotations(data) {
     if (data.length) return [];
-    return [{
-      text: 'No live hit data found',
-      x: 0.5,
-      y: 0.5,
-      xref: 'paper',
-      yref: 'paper',
-      showarrow: false,
-      font: { color: '#64748b', size: 16 },
-    }];
+    return [this.emptyAnnotation('No live hit data found')];
   }
 }

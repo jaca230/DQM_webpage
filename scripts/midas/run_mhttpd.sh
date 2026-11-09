@@ -6,7 +6,7 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 PROJECT_DIR=$(realpath "$SCRIPT_DIR/../..")
 BUILD_DIR=${DQM_BUILD_DIR:-$PROJECT_DIR/build}
 EXPERIMENT=${MIDAS_EXPT_NAME:-${MIDAS_EXPERIMENT:-}}
-PORT=${MIDAS_HTTP_PORT:-8081}
+PORT=${MIDAS_HTTP_PORT:-8080}
 PAGE_NAME=${DQM_MIDAS_PAGE_NAME:-DQM}
 MHTTPD_ARGS=()
 
@@ -16,7 +16,7 @@ Usage: ./scripts/midas/run_mhttpd.sh [OPTIONS] [-- MHTTPD_ARGS...]
 
 Options:
   --experiment NAME   MIDAS experiment (default: MIDAS_EXPT_NAME)
-  --port PORT         Local HTTP port (default: 8081)
+  --port PORT         Local HTTP port (default: 8080)
   --page-name NAME    Custom-page name printed in the launch URL (default: DQM)
   --build-dir PATH    Production frontend bundle (default: build/)
   --no-hostlist       Forward MIDAS's --no-hostlist option

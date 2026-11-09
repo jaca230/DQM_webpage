@@ -6,7 +6,7 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 PROJECT_DIR=$(realpath "$SCRIPT_DIR/../..")
 BUILD_DIR=${DQM_BUILD_DIR:-$PROJECT_DIR/build}
 EXPERIMENT=${MIDAS_EXPT_NAME:-${MIDAS_EXPERIMENT:-}}
-GATEWAY_URL=${DQM_GATEWAY_URL:-http://127.0.0.1:8080}
+GATEWAY_URL=${DQM_GATEWAY_URL:-http://127.0.0.1:8000}
 PAGE_NAME=${DQM_MIDAS_PAGE_NAME:-DQM}
 FORCE_CUSTOM_PATH=false
 
@@ -16,7 +16,7 @@ Usage: ./scripts/midas/configure_custom_page.sh [OPTIONS]
 
 Options:
   --experiment NAME    MIDAS experiment (default: MIDAS_EXPT_NAME)
-  --gateway-url URL    DQM gateway base URL (default: http://127.0.0.1:8080)
+  --gateway-url URL    DQM gateway base URL (default: http://127.0.0.1:8000)
   --page-name NAME     MIDAS custom-page name (default: DQM)
   --build-dir PATH     Production frontend bundle (default: build/)
   --force-custom-path Replace an existing MIDAS /Custom/Path value

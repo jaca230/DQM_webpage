@@ -1,4 +1,4 @@
-jest.mock('../plots/PlotlyComponent', () => () => null);
+jest.mock('../../PlotlyComponent', () => () => null);
 
 import HdSocWaveformPlot from './HdSocWaveformPlot';
 import MuSipHitPlot from '../hits/MuSipHitPlot';
@@ -13,6 +13,23 @@ describe('live detector waveform plots', () => {
       callback?.();
     };
   };
+
+  test('uses a configurable waveform color', () => {
+    const plot = new Wfd5WaveformPlot({
+      id: 'wfd5-color',
+      settings: {
+        crate: 0, amc: 1, channel: 1, lineColor: '#ff00aa',
+      },
+    });
+    const traces = plot.buildTraces({
+      detector: 'wfd5',
+      waveforms: [{
+        module: 0, submodule: 1, channel: 1,
+        samples: [1, 2], 'sample-period-ns': 1,
+      }],
+    });
+    expect(traces[0].line.color).toBe('rgba(255,0,170,1)');
+  });
 
   test('never invents samples when no matching live waveform exists', () => {
     const plot = new SampicWaveformPlot({
@@ -103,6 +120,7 @@ describe('live detector waveform plots', () => {
     const sampic = new SampicWaveformPlot({
       id: 'sampic',
       settings: {
+        followLatest: false,
         crate: 2,
         feb: 3,
         chip: 1,
@@ -139,5 +157,22 @@ describe('live detector waveform plots', () => {
       detector: 'musip', module: '0', submodule: '0', channel: '0',
     });
     expect(wfd5.getSelection()).toEqual({ module: 0, submodule: 1, channel: 1 });
+  });
+
+  test('can follow one latest active SAMPIC channel without fetching every trace', () => {
+    const plot = new SampicWaveformPlot({
+      id: 'sampic',
+      settings: { followLatest: true, maximumSamples: 128 },
+    });
+
+    const url = new URL(plot.getDataUrl());
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      detector: 'sampic', latest: 'true', 'max-samples': '128',
+    });
+    const traces = plot.buildTraces({
+      detector: 'sampic',
+      waveforms: [{ module: 3, submodule: 2, channel: 9, samples: [1, 2, 3] }],
+    });
+    expect(traces[0].name).toBe('sampic C0 FEB3 S2 Ch9');
   });
 });

@@ -55,4 +55,17 @@ export default class WaveformDataAdapter {
     }
     return null;
   }
+
+  static first(payload, detector) {
+    const detectorName = detector.toLowerCase();
+    for (const collection of this.collections(payload)) {
+      const waveform = collection.find((candidate) => {
+        const candidateDetector = this.detector(candidate, payload);
+        return this.samples(candidate)
+          && (!candidateDetector || candidateDetector === detectorName);
+      });
+      if (waveform) return waveform;
+    }
+    return null;
+  }
 }

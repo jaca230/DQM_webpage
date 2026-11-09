@@ -1,5 +1,5 @@
 import DetectorWaveformPlot from './DetectorWaveformPlot';
-import SettingTypes from '../../enums/SettingTypes';
+import SettingTypes from '../../../../enums/SettingTypes';
 
 export default class Wfd5WaveformPlot extends DetectorWaveformPlot {
   static displayName = 'WFD5 Waveform';

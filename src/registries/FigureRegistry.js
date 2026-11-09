@@ -13,10 +13,12 @@ export default class FigureRegistry extends Registry {
       'Plot.jsx',
       'Table.jsx',
       'DetectorWaveformPlot.jsx',
+      'PulseIntegralPlot.jsx',
       'WaveformDataAdapter.js',
       'AtarPlot.jsx',
       'AtarChannelMapPlot.jsx',
       'AtarHeatmapPlot.jsx',
+      'TestBeamPlot.jsx',
     ];
 
     const ignoreDirs = [

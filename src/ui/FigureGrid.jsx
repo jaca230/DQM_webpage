@@ -426,6 +426,7 @@ class FigureGrid extends React.Component {
               >
                 <FigureTile
                   title={fig.title}
+                  figureType={FigureComponent?.figureType || { id: fig.type, label: fig.type }}
                   settings={fig.settings}
                   schema={schema}
                   onDelete={() => onDeleteFigure(fig.id)}

@@ -1,8 +1,8 @@
-import Plot from '../plots/Plot';
-import SettingTypes from '../../enums/SettingTypes';
-import { resolveGatewayUrl } from '../../config/runtimeConfig';
+import TestBeamPlot from '../TestBeamPlot';
+import SettingTypes from '../../../../enums/SettingTypes';
+import { resolveGatewayUrl } from '../../../../config/runtimeConfig';
 
-export default class HistogramPlot extends Plot {
+export default class HistogramPlot extends TestBeamPlot {
   static displayName = 'Live Histogram';
   static name = 'HistogramPlot';
 
@@ -11,7 +11,7 @@ export default class HistogramPlot extends Plot {
       ...super.settingSchema,
       histogramName: {
         type: SettingTypes.STRING,
-        default: 'PulseIntegrals/wfd5_pulse_integral',
+        default: 'PulseIntegrals/wfd5/global/pulse_integral',
         label: 'Histogram name',
       },
       baseline: {
@@ -56,36 +56,32 @@ export default class HistogramPlot extends Plot {
     const baseUrl = this.settings.dataUrl;
     if (baseUrl === 'None') return baseUrl;
     const url = new URL(resolveGatewayUrl(baseUrl));
-    url.searchParams.set('name', this.settings.histogramName);
+    url.searchParams.set('name', this.getHistogramName());
     url.searchParams.set('max-bins', Math.max(1, this.settings.maximumBins));
     if (this.settings.baseline) url.searchParams.set('baseline', this.settings.baseline);
     return url.toString();
   }
 
+  getHistogramName() {
+    return this.settings.histogramName;
+  }
+
   initPlot(payload) {
     const data = this.buildTraces(payload);
+    const layout = this.plotLayout(this.axisTitle(payload), 'Entries');
     return {
       data,
       layout: {
-        autosize: true,
-        margin: { t: 20, r: 20, l: 58, b: 48 },
-        paper_bgcolor: '#ffffff',
-        plot_bgcolor: '#f8fafc',
-        font: { color: '#172033' },
+        ...layout,
         xaxis: {
-          title: this.axisTitle(payload),
+          ...layout.xaxis,
           type: this.settings.xAxisScale,
-          gridcolor: '#dbe3ee',
-          zerolinecolor: '#94a3b8',
         },
         yaxis: {
-          title: 'Count',
+          ...layout.yaxis,
           type: this.settings.yAxisScale,
           rangemode: this.settings.yAxisScale === 'linear' ? 'tozero' : undefined,
-          gridcolor: '#dbe3ee',
-          zerolinecolor: '#94a3b8',
         },
-        showlegend: false,
         annotations: this.statusAnnotations(data),
       },
     };
@@ -99,7 +95,7 @@ export default class HistogramPlot extends Plot {
         ...this.state.layout,
         xaxis: {
           ...this.state.layout.xaxis,
-          title: this.axisTitle(payload),
+          title: { text: this.axisTitle(payload), standoff: 12 },
           type: this.settings.xAxisScale,
         },
         yaxis: {
@@ -139,14 +135,6 @@ export default class HistogramPlot extends Plot {
 
   statusAnnotations(data) {
     if (data.length) return [];
-    return [{
-      text: 'No live histogram found',
-      x: 0.5,
-      y: 0.5,
-      xref: 'paper',
-      yref: 'paper',
-      showarrow: false,
-      font: { color: '#64748b', size: 16 },
-    }];
+    return [this.emptyAnnotation('No live histogram found')];
   }
 }

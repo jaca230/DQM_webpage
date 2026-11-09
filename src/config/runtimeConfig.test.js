@@ -11,6 +11,10 @@ describe('runtime gateway configuration', () => {
     expect(resolveGatewayUrl('/api/v1/catalog')).toBe('http://daq-host:9080/api/v1/catalog');
   });
 
+  test('uses the standard local gateway port by default', () => {
+    expect(getGatewayBaseUrl()).toBe('http://localhost:8000');
+  });
+
   test('preserves an explicitly configured absolute URL', () => {
     window.DQM_CONFIG = { gatewayBaseUrl: 'http://daq-host:9080' };
     expect(resolveGatewayUrl('https://expert.example/api/data'))

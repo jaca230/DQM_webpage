@@ -6,11 +6,22 @@ export default class BaseFigure extends React.Component {
   static displayName = 'Base Figure';
   static name = 'BaseFigure';
 
+  static get figureType() {
+    return {
+      id: this.figureName || this.name,
+      label: this.displayName || this.figureName || this.name,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.id = props.id || `figure_${Math.random().toString(36).slice(2, 11)}`;
     this.title = props.title || 'Untitled Figure';
     this.settings = this.applySchema(props.settings || {});
+  }
+
+  get figureType() {
+    return this.constructor.figureType;
   }
 
   static get settingSchema() {

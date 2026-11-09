@@ -1,9 +1,6 @@
 import React from 'react';
 import Modal from './Modal';
 
-const MIN_ZOOM_PERCENT = 20;
-const MAX_ZOOM_PERCENT = 500;
-
 export default class ApplicationSettingsModal extends React.Component {
   constructor(props) {
     super(props);
@@ -19,24 +16,18 @@ export default class ApplicationSettingsModal extends React.Component {
   stateFromProps(props) {
     return {
       fetchMode: props.syncMode ? 'sync' : 'async',
-      zoomPercent: Math.round((props.zoom || 1) * 100),
     };
   }
 
   handleApply = () => {
-    const zoomPercent = Math.min(
-      MAX_ZOOM_PERCENT,
-      Math.max(MIN_ZOOM_PERCENT, Number(this.state.zoomPercent) || 100)
-    );
     this.props.onApply?.({
       syncMode: this.state.fetchMode === 'sync',
-      zoom: zoomPercent / 100,
     });
   };
 
   render() {
-    const { visible, onClose, defaultZoom = 1 } = this.props;
-    const { fetchMode, zoomPercent } = this.state;
+    const { visible, onClose } = this.props;
+    const { fetchMode } = this.state;
     const footer = (
       <>
         <button className="button button-secondary" type="button" onClick={onClose}>Cancel</button>
@@ -76,38 +67,6 @@ export default class ApplicationSettingsModal extends React.Component {
           </label>
         </div>
 
-        <div className="settings-section settings-section-compact">
-          <h3>Canvas</h3>
-          <label className="form-field" htmlFor="dashboard-zoom">
-            <span>Zoom</span>
-            <div className="zoom-control">
-              <input
-                id="dashboard-zoom"
-                type="range"
-                min={MIN_ZOOM_PERCENT}
-                max={MAX_ZOOM_PERCENT}
-                value={zoomPercent}
-                onChange={(event) => this.setState({ zoomPercent: event.target.value })}
-              />
-              <input
-                type="number"
-                min={MIN_ZOOM_PERCENT}
-                max={MAX_ZOOM_PERCENT}
-                value={zoomPercent}
-                onChange={(event) => this.setState({ zoomPercent: event.target.value })}
-                aria-label="Canvas zoom percent"
-              />
-              <span>%</span>
-            </div>
-          </label>
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={() => this.setState({ zoomPercent: Math.round(defaultZoom * 100) })}
-          >
-            Reset tab zoom
-          </button>
-        </div>
       </Modal>
     );
   }

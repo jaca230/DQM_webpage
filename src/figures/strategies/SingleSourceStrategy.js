@@ -29,16 +29,6 @@ export default class SingleSourceStrategy extends FetchStrategy {
         }
       }
     );
-
-    // Immediate cached data if available
-    const cached = this.dataManager.getCachedData(url);
-    if (cached && cached.data !== null) {
-      this.fig.setState({ loading: false });
-      this.fig.onDataReceived(cached.data);
-    } else if (cached && cached.error !== null) {
-      this.fig.setState({ loading: false, error: cached.error });
-      this.fig.onDataError(cached.error);
-    }
   }
 
   unsubscribe() {
